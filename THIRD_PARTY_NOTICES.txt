@@ -1,0 +1,7 @@
+pypdf: app/vendor/PYPDF_LICENSE.txt
+FontTools (MIT): app/vendor/FONTTOOLS_LICENSE.txt
+Poppins Regular, Copyright 2014-2017 Indian Type Foundry (OFL 1.1):
+app/label_assets/POPPINS_LICENSE.txt
+PDF.js (Apache 2.0): app/static/pdfjs/LICENSE
+PDF.js font/WASM resource licenses are retained in their subdirectories.
+Atlas artwork is retained from the supplied user PDFs.

@@ -1001,12 +1001,17 @@ def choose_output_folder(initial: str) -> str:
     initial_escaped = initial.replace("'", "''")
     script = (
         "Add-Type -AssemblyName System.Windows.Forms;"
-        "$d=New-Object System.Windows.Forms.FolderBrowserDialog;"
-        "$d.Description='Choose where the generated PDF files will be saved';"
-        f"$d.SelectedPath='{initial_escaped}';"
+        "$d=New-Object System.Windows.Forms.OpenFileDialog;"
+        "$d.Title='Choose a folder';"
+        "$d.Filter='Folders|*.folder';"
+        "$d.CheckFileExists=$false;"
+        "$d.CheckPathExists=$true;"
+        "$d.ValidateNames=$false;"
+        "$d.FileName='Select Folder';"
+        f"$d.InitialDirectory='{initial_escaped}';"
         "if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){"
         "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
-        "Write-Output $d.SelectedPath}"
+        "Write-Output (Split-Path -Parent $d.FileName)}"
     )
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW

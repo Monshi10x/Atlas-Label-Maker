@@ -372,6 +372,20 @@
     }
   }
 
+  async function addBlankTemplate() {
+    showBusy("CREATING TEMPLATE", "Creating a blank A5 placement template…");
+    try {
+      const payload = await api("/api/templates/blank", { method: "POST", body: new Uint8Array([1]) });
+      await loadTemplates(payload.template.id);
+      toast("Blank A5 template created. Add and position labels in the editor.");
+      openTemplateEditor(payload.template.id);
+    } catch (error) {
+      toast(error.message, "error", 8000);
+    } finally {
+      hideBusy();
+    }
+  }
+
   function deepCopy(value) { return JSON.parse(JSON.stringify(value)); }
 
   function openTemplateEditor(id) {
@@ -483,9 +497,6 @@
     const startX = event.clientX;
     const startY = event.clientY;
     const mapRect = el.pageMap.getBoundingClientRect();
-    const pointerId = event.pointerId;
-    event.currentTarget.setPointerCapture(pointerId);
-
     const move = (moveEvent) => {
       const dxPt = (moveEvent.clientX - startX) / mapRect.width * state.editor.page_width_pt;
       const dyPt = -(moveEvent.clientY - startY) / mapRect.height * state.editor.page_height_pt;
@@ -670,6 +681,7 @@
     el.editTemplateButton.addEventListener("click", () => openTemplateEditor(state.selectedTemplateId));
     $("manageTemplatesButton").addEventListener("click", () => { renderManagerList(); openModal("templateManagerModal"); });
     $("addTemplateButton").addEventListener("click", () => $("newTemplateInput").click());
+    $("addBlankTemplateButton").addEventListener("click", addBlankTemplate);
     $("newTemplateInput").addEventListener("change", (event) => addTemplate(event.target.files?.[0]));
     $("importLibraryButton").addEventListener("click", () => $("importLibraryInput").click());
     $("importLibraryInput").addEventListener("change", (event) => {

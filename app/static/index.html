@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Atlas Tools Label Sheet Builder</title>
+  <link rel="icon" type="image/png" href="/label-assets/atlas-icon.png">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <div class="top-strip">PRECISION. PERFORMANCE. RELIABILITY.</div>
   <header class="app-header">
-    <div class="brand" aria-label="Atlas Tools">
-      <div class="brand-mark">A</div>
-      <div class="brand-words"><strong>ATLAS</strong><span>TOOLS</span></div>
+    <div class="brand">
+      <img class="brand-logo" src="/label-assets/atlas-tools-logo.png" alt="Atlas Tools">
     </div>
     <div class="header-title">
       <span>PRODUCTION UTILITY</span>
@@ -19,6 +19,7 @@
     </div>
     <div class="header-actions">
       <button class="button ghost" id="manageTemplatesButton">SHEET LAYOUTS</button>
+      <button class="button ghost" id="settingsButton">SETTINGS</button>
       <button class="icon-button" id="closeAppButton" title="Close application" aria-label="Close application">×</button>
     </div>
   </header>
@@ -34,27 +35,13 @@
     </section>
 
     <section class="workflow-grid">
-      <article class="workflow-card" id="templateStep">
-        <div class="step-heading">
-          <span class="step-number">01</span>
-          <div><p>STEP ONE</p><h3>CHOOSE TOOL LABEL</h3></div>
-        </div>
-        <label class="field-label" for="toolTemplateSelect">Tool-label template</label>
-        <select id="toolTemplateSelect"></select>
-        <p class="note-line">Select artwork for a new label or to replace the selected row.</p>
-        <label class="field-label" for="toolTemplateFolder">Label template folder</label>
-        <div class="folder-row"><input id="toolTemplateFolder"><button id="chooseToolFolder" class="button outline compact">BROWSE</button></div>
-        <div class="designer-actions"><button id="refreshToolTemplates" class="button outline compact">LOAD / REFRESH</button><button id="openToolFolder" class="button ghost compact">OPEN FOLDER</button></div>
-        <p id="toolTemplateErrors" class="note-line" role="status"></p>
-      </article>
-
       <article class="workflow-card" id="labelsStep">
         <div class="step-heading">
-          <span class="step-number">02</span>
-          <div><p>STEP TWO</p><h3>ADD TOOL LABELS</h3></div>
+          <span class="step-number">01</span>
+          <div><p>STEP ONE</p><h3>ADD TOOL LABELS</h3></div>
         </div>
         <p class="note-line">Each row is a separate label. Edit the text directly; all current edits are included when generating sheets.</p>
-        <div class="designer-actions"><button class="button primary compact" id="addLabelRow">+ ADD LABEL</button><button class="button outline compact" id="designFontUpload">UPLOAD OTHER FONT</button><input type="file" id="designFontFile" accept=".ttf" hidden></div>
+        <div class="designer-actions"><div class="label-template-menu"><button class="button primary compact" id="addLabelRow" type="button" aria-haspopup="true" aria-expanded="false">+ ADD LABEL <span>▾</span></button><div class="label-template-options hidden" id="labelTemplateOptions" role="menu"></div></div><button class="button outline compact" id="designFontUpload">UPLOAD OTHER FONT</button><input type="file" id="designFontFile" accept=".ttf" hidden></div>
         <p class="note-line">Poppins Regular is included. Select a row to preview it and use its text for the combined PDF name.</p>
         <input id="labelFileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
         <button class="drop-zone" id="labelDropZone" type="button">
@@ -70,8 +57,8 @@
 
       <article class="workflow-card output-card" id="outputStep">
         <div class="step-heading">
-          <span class="step-number">03</span>
-          <div><p>STEP THREE</p><h3>OUTPUT OPTIONS</h3></div>
+          <span class="step-number">02</span>
+          <div><p>STEP TWO</p><h3>OUTPUT OPTIONS</h3></div>
         </div>
 
         <label class="field-label" for="templateSelect">A5 sheet layout</label>
@@ -127,10 +114,6 @@
     </section>
 
     <section class="generate-panel">
-      <div>
-        <span class="cut-swatch"></span>
-        <div><strong>CUTCONTOUR IS ALWAYS APPLIED</strong><small>Spot colour: CutContour · Alternate CMYK 11 / 100 / 0 / 0 · Stroke: 1 pt</small></div>
-      </div>
       <button class="button primary large" id="generateButton">GENERATE A5 SHEETS <span>→</span></button>
     </section>
 
@@ -140,6 +123,24 @@
     </section>
   </main>
 
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header"><div><p class="eyebrow">APPLICATION SETTINGS</p><h2>SETTINGS</h2></div><button class="icon-button modal-close" data-close="settingsModal">×</button></div>
+      <div class="settings-content">
+        <label class="field-label" for="toolTemplateFolder">Label template folder</label>
+        <div class="folder-row"><input id="toolTemplateFolder"><button id="chooseToolFolder" class="button outline compact">BROWSE</button></div>
+        <div class="designer-actions"><button id="refreshToolTemplates" class="button outline compact">LOAD / REFRESH</button><button id="openToolFolder" class="button ghost compact">OPEN FOLDER</button></div>
+        <p id="toolTemplateErrors" class="note-line" role="status"></p>
+        <div class="settings-divider"></div>
+        <p class="group-label">CUT CONTOUR</p>
+        <div class="cut-contour-setting">
+          <span class="cut-swatch"></span>
+          <div><strong>SPOT COLOUR: CUTCONTOUR</strong><small>Alternate CMYK 11 / 100 / 0 / 0 · Stroke: 1 pt · Always applied</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop hidden" id="templateManagerModal">
     <div class="modal large-modal">
       <div class="modal-header"><div><p class="eyebrow">PERMANENT LIBRARY</p><h2>TEMPLATE MANAGER</h2></div><button class="icon-button modal-close" data-close="templateManagerModal">×</button></div>
@@ -147,6 +148,7 @@
         <input type="file" id="newTemplateInput" accept="application/pdf,.pdf" hidden>
         <input type="file" id="importLibraryInput" accept=".atlaslabels,application/octet-stream" hidden>
         <button class="button primary" id="addTemplateButton">+ ADD TEMPLATE</button>
+        <button class="button outline" id="addBlankTemplateButton">+ BLANK</button>
         <button class="button outline" id="importLibraryButton">IMPORT LIBRARY</button>
         <button class="button outline" id="exportLibraryButton">EXPORT LIBRARY</button>
       </div>
@@ -165,6 +167,11 @@
             <label class="field-label">Label width (mm)<input id="editorWidth" type="number" min="1" step="0.01"></label>
             <label class="field-label">Label height (mm)<input id="editorHeight" type="number" min="1" step="0.01"></label>
           </div>
+          <div class="dimension-row position-fields">
+            <label class="field-label">Position X (mm)<input id="editorPositionX" type="number" min="0" step="0.01" disabled></label>
+            <label class="field-label">Position Y (mm)<input id="editorPositionY" type="number" min="0" step="0.01" disabled></label>
+          </div>
+          <p class="position-help">Select a position to set its distance from the page's left and bottom edges.</p>
           <div class="editor-meta" id="editorMeta"></div>
           <div class="editor-actions">
             <button class="button outline" id="addSlotButton">+ ADD POSITION</button>

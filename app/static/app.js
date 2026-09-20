@@ -42,6 +42,8 @@
     editorName: $("editorName"),
     editorWidth: $("editorWidth"),
     editorHeight: $("editorHeight"),
+    editorPositionX: $("editorPositionX"),
+    editorPositionY: $("editorPositionY"),
     editorMeta: $("editorMeta"),
     pageMap: $("pageMap"),
     editorTitle: $("editorTitle"),
@@ -370,6 +372,20 @@
     }
   }
 
+  async function addBlankTemplate() {
+    showBusy("CREATING TEMPLATE", "Creating a blank A5 placement template…");
+    try {
+      const payload = await api("/api/templates/blank", { method: "POST", body: new Uint8Array([1]) });
+      await loadTemplates(payload.template.id);
+      toast("Blank A5 template created. Add and position labels in the editor.");
+      openTemplateEditor(payload.template.id);
+    } catch (error) {
+      toast(error.message, "error", 8000);
+    } finally {
+      hideBusy();
+    }
+  }
+
   function deepCopy(value) { return JSON.parse(JSON.stringify(value)); }
 
   function openTemplateEditor(id) {
@@ -432,6 +448,37 @@
     const hasSelection = state.editorSelectedSlot >= 0 && state.editorSelectedSlot < template.slots.length;
     el.rotateSlotButton.disabled = !hasSelection;
     el.deleteSlotButton.disabled = !hasSelection;
+    syncEditorPositionFields();
+  }
+
+  function syncEditorPositionFields() {
+    const slot = state.editor?.slots[state.editorSelectedSlot];
+    const hasSelection = Boolean(slot);
+    el.editorPositionX.disabled = !hasSelection;
+    el.editorPositionY.disabled = !hasSelection;
+    if (!hasSelection) {
+      el.editorPositionX.value = "";
+      el.editorPositionY.value = "";
+      return;
+    }
+    const dims = editorDimensionsPt();
+    const bbox = transformBBox(dims.width, dims.height, slot.matrix);
+    el.editorPositionX.value = (bbox.x * PT_TO_MM).toFixed(2);
+    el.editorPositionY.value = (bbox.y * PT_TO_MM).toFixed(2);
+  }
+
+  function updateEditorPosition() {
+    const slot = state.editor?.slots[state.editorSelectedSlot];
+    if (!slot || !state.editor) return;
+    const xMm = Number(el.editorPositionX.value);
+    const yMm = Number(el.editorPositionY.value);
+    if (!Number.isFinite(xMm) || !Number.isFinite(yMm)) return;
+    const dims = editorDimensionsPt();
+    const bbox = transformBBox(dims.width, dims.height, slot.matrix);
+    const x = Math.min(Math.max(0, xMm * MM_TO_PT), Math.max(0, state.editor.page_width_pt - bbox.w));
+    const y = Math.min(Math.max(0, yMm * MM_TO_PT), Math.max(0, state.editor.page_height_pt - bbox.h));
+    slot.matrix = matrixForBBox(x, y, slot.rotation || 0, dims.width, dims.height);
+    renderEditor();
   }
 
   function selectEditorSlot(index) {
@@ -450,9 +497,6 @@
     const startX = event.clientX;
     const startY = event.clientY;
     const mapRect = el.pageMap.getBoundingClientRect();
-    const pointerId = event.pointerId;
-    event.currentTarget.setPointerCapture(pointerId);
-
     const move = (moveEvent) => {
       const dxPt = (moveEvent.clientX - startX) / mapRect.width * state.editor.page_width_pt;
       const dyPt = -(moveEvent.clientY - startY) / mapRect.height * state.editor.page_height_pt;
@@ -637,6 +681,7 @@
     el.editTemplateButton.addEventListener("click", () => openTemplateEditor(state.selectedTemplateId));
     $("manageTemplatesButton").addEventListener("click", () => { renderManagerList(); openModal("templateManagerModal"); });
     $("addTemplateButton").addEventListener("click", () => $("newTemplateInput").click());
+    $("addBlankTemplateButton").addEventListener("click", addBlankTemplate);
     $("newTemplateInput").addEventListener("change", (event) => addTemplate(event.target.files?.[0]));
     $("importLibraryButton").addEventListener("click", () => $("importLibraryInput").click());
     $("importLibraryInput").addEventListener("change", (event) => {
@@ -669,6 +714,8 @@
 
     el.editorWidth.addEventListener("change", updateEditorDimensions);
     el.editorHeight.addEventListener("change", updateEditorDimensions);
+    el.editorPositionX.addEventListener("change", updateEditorPosition);
+    el.editorPositionY.addEventListener("change", updateEditorPosition);
     $("addSlotButton").addEventListener("click", () => {
       if (!state.editor) return;
       const dims = editorDimensionsPt();

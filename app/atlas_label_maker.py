@@ -1083,6 +1083,13 @@ class Handler(BaseHTTPRequestHandler):
                 target = APP_DIR / "static" / rel
                 mime = mime_for(target)
                 self.send_file(target, mime)
+            elif path.startswith("/label-assets/"):
+                rel = path[len("/label-assets/"):]
+                if ".." in rel or rel.startswith("/"):
+                    raise AppError("Invalid file path.")
+                target = APP_DIR / "label_assets" / rel
+                mime = mime_for(target)
+                self.send_file(target, mime)
             else:
                 self.send_error(HTTPStatus.NOT_FOUND)
         except Exception as exc:

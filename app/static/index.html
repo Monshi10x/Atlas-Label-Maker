@@ -9,9 +9,8 @@
 <body>
   <div class="top-strip">PRECISION. PERFORMANCE. RELIABILITY.</div>
   <header class="app-header">
-    <div class="brand" aria-label="Atlas Tools">
-      <div class="brand-mark">A</div>
-      <div class="brand-words"><strong>ATLAS</strong><span>TOOLS</span></div>
+    <div class="brand">
+      <img class="brand-logo" src="/label-assets/atlas-tools-logo.png" alt="Atlas Tools">
     </div>
     <div class="header-title">
       <span>PRODUCTION UTILITY</span>
@@ -165,6 +164,11 @@
             <label class="field-label">Label width (mm)<input id="editorWidth" type="number" min="1" step="0.01"></label>
             <label class="field-label">Label height (mm)<input id="editorHeight" type="number" min="1" step="0.01"></label>
           </div>
+          <div class="dimension-row position-fields">
+            <label class="field-label">Position X (mm)<input id="editorPositionX" type="number" min="0" step="0.01" disabled></label>
+            <label class="field-label">Position Y (mm)<input id="editorPositionY" type="number" min="0" step="0.01" disabled></label>
+          </div>
+          <p class="position-help">Select a position to set its distance from the page's left and bottom edges.</p>
           <div class="editor-meta" id="editorMeta"></div>
           <div class="editor-actions">
             <button class="button outline" id="addSlotButton">+ ADD POSITION</button>

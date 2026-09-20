@@ -57,7 +57,7 @@
   const previewReady=import('/static/label-preview.mjs').then(m=>new m.LabelPreview($("designViewer"),$("designCanvas")));
   const jsonPost=body=>({method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   const activeRow=()=>state.uploads.find(row=>row.rowId===activeRowId);
-  const chosenTool=()=>toolTemplates.find(t=>t.id===$("toolTemplateSelect").value);
+  const chosenTool=(id)=>toolTemplates.find(t=>t.id===id);
   function rowPayload(row){return {source_token:row.source_token,tool_template_id:row.tool_template_id,template_folder:row.template_folder,title:row.title,specification:row.specification,use_custom_font:!!row.use_custom_font,editable:row.editable};}
   function syncCombinedName(){
     const row=activeRow();
@@ -66,25 +66,20 @@
   }
   function clearDesignPreview(){previewGeneration++;previewReady.then(p=>p.clear()).catch(()=>{});if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=null;$("designNotice").textContent='';}
   function selectRow(id){activeRowId=id;syncCombinedName();clearDesignPreview();el.labelList.querySelectorAll('tr[data-row]').forEach(tr=>{tr.classList.toggle('selected',tr.dataset.row===id);tr.querySelector('input[type=radio]').checked=tr.dataset.row===id;});}
-  function addRow(){
-    const t=chosenTool();if(!t)return toast('Choose a tool-label template.','error');
+  function addRow(templateId){
+    const t=chosenTool(templateId);if(!t)return toast('Choose a tool-label template.','error');
     const row={rowId:crypto.randomUUID(),tool_template_id:t.id,template_folder:toolFolder,filename:t.id,title:t.title,specification:t.specification,editable:true,use_custom_font:false,width_pt:t.width_pt,height_pt:t.height_pt,width_mm:55,height_mm:15};
     state.uploads.push(row);activeRowId=row.rowId;clearDesignPreview();renderUploads();
   }
   async function loadToolTemplates(data=null){
-    data=data || await api('/api/tool-templates');const previous=$("toolTemplateSelect").value;
-    toolTemplates=data.templates;toolFolder=data.folder;$("toolTemplateFolder").value=toolFolder;$("toolTemplateSelect").replaceChildren();
-    toolTemplates.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;$("toolTemplateSelect").append(o);});
-    if(toolTemplates.some(t=>t.id===previous))$("toolTemplateSelect").value=previous;
+    data=data || await api('/api/tool-templates');
+    toolTemplates=data.templates;toolFolder=data.folder;$("toolTemplateFolder").value=toolFolder;
+    const options=$("labelTemplateOptions");options.replaceChildren();
+    toolTemplates.forEach(t=>{const button=document.createElement('button');button.type='button';button.role='menuitem';button.textContent=t.name;button.addEventListener('click',()=>{options.classList.add('hidden');$("addLabelRow").setAttribute('aria-expanded','false');addRow(t.id);});options.append(button);});
+    if(!toolTemplates.length)options.innerHTML='<span class="note-line">No label templates found. Choose a folder in Settings.</span>';
     $("addLabelRow").disabled=!toolTemplates.length;$("toolTemplateErrors").textContent=data.errors.join('\n');
   }
-  $("addLabelRow").addEventListener('click',addRow);
-  $("toolTemplateSelect").addEventListener('change',()=>{
-    const row=activeRow(),t=chosenTool();if(!t)return;
-    if(row){const old=row.source_token;Object.assign(row,{source_token:null,tool_template_id:t.id,template_folder:toolFolder,filename:t.id,title:t.title,specification:t.specification,editable:true,use_custom_font:false,width_pt:t.width_pt,height_pt:t.height_pt,width_mm:55,height_mm:15});if(old)api(`/api/labels/${old}`,{method:'DELETE'}).catch(()=>{});clearDesignPreview();renderUploads();}
-    else addRow();
-    previewSelected(false);
-  });
+  $("addLabelRow").addEventListener('click',()=>{const options=$("labelTemplateOptions");const opening=options.classList.contains('hidden');options.classList.toggle('hidden',!opening);$("addLabelRow").setAttribute('aria-expanded',String(opening));});
   async function changeFolder(browse){showBusy('LOADING TEMPLATES');try{const data=await api('/api/tool-templates/folder',jsonPost(browse?{}:{folder:$("toolTemplateFolder").value}));if(!data.cancelled)await loadToolTemplates(data);}catch(e){toast(e.message,'error');}finally{hideBusy();}}
   $("chooseToolFolder").addEventListener('click',()=>changeFolder(true));
   $("refreshToolTemplates").addEventListener('click',()=>changeFolder(false));
@@ -680,6 +675,7 @@
     });
     el.editTemplateButton.addEventListener("click", () => openTemplateEditor(state.selectedTemplateId));
     $("manageTemplatesButton").addEventListener("click", () => { renderManagerList(); openModal("templateManagerModal"); });
+    $("settingsButton").addEventListener("click", () => openModal("settingsModal"));
     $("addTemplateButton").addEventListener("click", () => $("newTemplateInput").click());
     $("addBlankTemplateButton").addEventListener("click", addBlankTemplate);
     $("newTemplateInput").addEventListener("change", (event) => addTemplate(event.target.files?.[0]));
@@ -711,6 +707,11 @@
 
     document.querySelectorAll(".modal-close").forEach((button) => button.addEventListener("click", () => closeModal(button.dataset.close)));
     document.querySelectorAll(".modal-backdrop").forEach((backdrop) => backdrop.addEventListener("mousedown", (event) => { if (event.target === backdrop && backdrop.id !== "confirmModal") closeModal(backdrop.id); }));
+    document.addEventListener("click", (event) => {
+      if (event.target.closest(".label-template-menu")) return;
+      $("labelTemplateOptions").classList.add("hidden");
+      $("addLabelRow").setAttribute("aria-expanded", "false");
+    });
 
     el.editorWidth.addEventListener("change", updateEditorDimensions);
     el.editorHeight.addEventListener("change", updateEditorDimensions);

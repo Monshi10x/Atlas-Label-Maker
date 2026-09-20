@@ -19,6 +19,7 @@
     </div>
     <div class="header-actions">
       <button class="button ghost" id="manageTemplatesButton">SHEET LAYOUTS</button>
+      <button class="button ghost" id="settingsButton">SETTINGS</button>
       <button class="icon-button" id="closeAppButton" title="Close application" aria-label="Close application">×</button>
     </div>
   </header>
@@ -34,27 +35,13 @@
     </section>
 
     <section class="workflow-grid">
-      <article class="workflow-card" id="templateStep">
-        <div class="step-heading">
-          <span class="step-number">01</span>
-          <div><p>STEP ONE</p><h3>CHOOSE TOOL LABEL</h3></div>
-        </div>
-        <label class="field-label" for="toolTemplateSelect">Tool-label template</label>
-        <select id="toolTemplateSelect"></select>
-        <p class="note-line">Select artwork for a new label or to replace the selected row.</p>
-        <label class="field-label" for="toolTemplateFolder">Label template folder</label>
-        <div class="folder-row"><input id="toolTemplateFolder"><button id="chooseToolFolder" class="button outline compact">BROWSE</button></div>
-        <div class="designer-actions"><button id="refreshToolTemplates" class="button outline compact">LOAD / REFRESH</button><button id="openToolFolder" class="button ghost compact">OPEN FOLDER</button></div>
-        <p id="toolTemplateErrors" class="note-line" role="status"></p>
-      </article>
-
       <article class="workflow-card" id="labelsStep">
         <div class="step-heading">
-          <span class="step-number">02</span>
-          <div><p>STEP TWO</p><h3>ADD TOOL LABELS</h3></div>
+          <span class="step-number">01</span>
+          <div><p>STEP ONE</p><h3>ADD TOOL LABELS</h3></div>
         </div>
         <p class="note-line">Each row is a separate label. Edit the text directly; all current edits are included when generating sheets.</p>
-        <div class="designer-actions"><button class="button primary compact" id="addLabelRow">+ ADD LABEL</button><button class="button outline compact" id="designFontUpload">UPLOAD OTHER FONT</button><input type="file" id="designFontFile" accept=".ttf" hidden></div>
+        <div class="designer-actions"><div class="label-template-menu"><button class="button primary compact" id="addLabelRow" type="button" aria-haspopup="true" aria-expanded="false">+ ADD LABEL <span>▾</span></button><div class="label-template-options hidden" id="labelTemplateOptions" role="menu"></div></div><button class="button outline compact" id="designFontUpload">UPLOAD OTHER FONT</button><input type="file" id="designFontFile" accept=".ttf" hidden></div>
         <p class="note-line">Poppins Regular is included. Select a row to preview it and use its text for the combined PDF name.</p>
         <input id="labelFileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
         <button class="drop-zone" id="labelDropZone" type="button">
@@ -70,8 +57,8 @@
 
       <article class="workflow-card output-card" id="outputStep">
         <div class="step-heading">
-          <span class="step-number">03</span>
-          <div><p>STEP THREE</p><h3>OUTPUT OPTIONS</h3></div>
+          <span class="step-number">02</span>
+          <div><p>STEP TWO</p><h3>OUTPUT OPTIONS</h3></div>
         </div>
 
         <label class="field-label" for="templateSelect">A5 sheet layout</label>
@@ -139,6 +126,18 @@
       <button class="button primary" id="openFolderButton">OPEN OUTPUT FOLDER</button>
     </section>
   </main>
+
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header"><div><p class="eyebrow">APPLICATION SETTINGS</p><h2>SETTINGS</h2></div><button class="icon-button modal-close" data-close="settingsModal">×</button></div>
+      <div class="settings-content">
+        <label class="field-label" for="toolTemplateFolder">Label template folder</label>
+        <div class="folder-row"><input id="toolTemplateFolder"><button id="chooseToolFolder" class="button outline compact">BROWSE</button></div>
+        <div class="designer-actions"><button id="refreshToolTemplates" class="button outline compact">LOAD / REFRESH</button><button id="openToolFolder" class="button ghost compact">OPEN FOLDER</button></div>
+        <p id="toolTemplateErrors" class="note-line" role="status"></p>
+      </div>
+    </div>
+  </div>
 
   <div class="modal-backdrop hidden" id="templateManagerModal">
     <div class="modal large-modal">

@@ -206,6 +206,40 @@ class AppState:
             shutil.rmtree(folder, ignore_errors=True)
             raise
 
+    def create_blank_template(self) -> dict[str, Any]:
+        template_id = uuid.uuid4().hex
+        folder = self.paths.templates / template_id
+        folder.mkdir(parents=True, exist_ok=False)
+        now = utc_now()
+        meta = {
+            "id": template_id,
+            "name": "Blank A5 Template",
+            "source_filename": "Blank A5.pdf",
+            "created_at": now,
+            "modified_at": now,
+            "page_width_pt": A5_WIDTH_PT,
+            "page_height_pt": A5_HEIGHT_PT,
+            "accepted_width_pt": 55 * MM_TO_PT,
+            "accepted_height_pt": 15 * MM_TO_PT,
+            "accepted_width_mm": 55,
+            "accepted_height_mm": 15,
+            "slot_count": 0,
+            "slots": [],
+            "detection_method": "blank",
+            "is_a5": True,
+            "sort_order": int(time.time()),
+        }
+        try:
+            writer = PdfWriter()
+            writer.add_blank_page(width=A5_WIDTH_PT, height=A5_HEIGHT_PT)
+            with (folder / "master.pdf").open("wb") as output:
+                writer.write(output)
+            self.save_template(meta, folder)
+            return meta
+        except Exception:
+            shutil.rmtree(folder, ignore_errors=True)
+            raise
+
     def update_template(self, template_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         with self.lock:
             meta, folder = self.get_template(template_id)
@@ -1001,12 +1035,17 @@ def choose_output_folder(initial: str) -> str:
     initial_escaped = initial.replace("'", "''")
     script = (
         "Add-Type -AssemblyName System.Windows.Forms;"
-        "$d=New-Object System.Windows.Forms.FolderBrowserDialog;"
-        "$d.Description='Choose where the generated PDF files will be saved';"
-        f"$d.SelectedPath='{initial_escaped}';"
+        "$d=New-Object System.Windows.Forms.OpenFileDialog;"
+        "$d.Title='Choose a folder';"
+        "$d.Filter='Folders|*.folder';"
+        "$d.CheckFileExists=$false;"
+        "$d.CheckPathExists=$true;"
+        "$d.ValidateNames=$false;"
+        "$d.FileName='Select Folder';"
+        f"$d.InitialDirectory='{initial_escaped}';"
         "if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){"
         "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
-        "Write-Output $d.SelectedPath}"
+        "Write-Output (Split-Path -Parent $d.FileName)}"
     )
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -1083,6 +1122,13 @@ class Handler(BaseHTTPRequestHandler):
                 target = APP_DIR / "static" / rel
                 mime = mime_for(target)
                 self.send_file(target, mime)
+            elif path.startswith("/label-assets/"):
+                rel = path[len("/label-assets/"):]
+                if ".." in rel or rel.startswith("/"):
+                    raise AppError("Invalid file path.")
+                target = APP_DIR / "label_assets" / rel
+                mime = mime_for(target)
+                self.send_file(target, mime)
             else:
                 self.send_error(HTTPStatus.NOT_FOUND)
         except Exception as exc:
@@ -1120,6 +1166,9 @@ class Handler(BaseHTTPRequestHandler):
                 filename = unquote(self.headers.get("X-Filename", "template.pdf"))
                 name = unquote(self.headers.get("X-Template-Name", Path(filename).stem))
                 meta = self.state.create_template(name, data, filename)
+                self.send_json({"template": meta}, status=201)
+            elif path == "/api/templates/blank":
+                meta = self.state.create_blank_template()
                 self.send_json({"template": meta}, status=201)
             elif path.startswith("/api/templates/") and path.endswith("/replace-master"):
                 template_id = path.split("/")[3]

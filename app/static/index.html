@@ -3,19 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f6f8">
-  <title>ACM Quote Workspace</title>
+  <title>Atlas Tools Label Sheet Builder</title>
+  <link rel="icon" type="image/png" href="/label-assets/atlas-icon.png">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#" aria-label="ACM home"><span class="brand-mark">A</span><span><b>ACM</b><small>SIGNS &amp; GRAPHICS</small></span></a>
-    <nav class="primary-nav" aria-label="Primary navigation">
-      <a href="#">Dashboard</a><a class="active" href="#">Quotes</a><a href="#">Jobs</a><a href="#">Customers</a><a href="#">Products</a>
-    </nav>
-    <div class="top-actions">
-      <button class="icon-btn" aria-label="Search">⌕</button><button class="icon-btn notification" aria-label="Notifications">♢<i></i></button>
-      <button class="user-menu"><span class="avatar">JM</span><span><b>Jordan Miller</b><small>Estimator</small></span><span>⌄</span></button>
+  <div class="top-strip">PRECISION. PERFORMANCE. RELIABILITY.</div>
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-logo" src="/label-assets/atlas-tools-logo.png" alt="Atlas Tools">
+    </div>
+    <div class="header-title">
+      <span>PRODUCTION UTILITY</span>
+      <h1>LABEL SHEET BUILDER</h1>
+    </div>
+    <div class="header-actions">
+      <button class="button ghost" id="manageTemplatesButton">SHEET LAYOUTS</button>
+      <button class="button ghost" id="settingsButton">SETTINGS</button>
+      <button class="icon-button" id="closeAppButton" title="Close application" aria-label="Close application">×</button>
     </div>
   </header>
 
@@ -35,18 +40,71 @@
       </div>
     </section>
 
-    <div class="workspace">
-      <section class="content-column">
-        <article class="card overview-card">
-          <div class="card-heading"><div><span class="section-kicker">QUOTE DETAILS</span><h2>Customer &amp; project</h2></div><button class="text-btn">Edit details</button></div>
-          <div class="overview-grid">
-            <div class="customer-block"><span class="company-logo">RC</span><div><small>CUSTOMER</small><b>Riverside Commercial Estates</b><p>Amelia Hart · amelia@riverside.co.uk</p></div></div>
-            <div><small>SITE</small><b>Riverside Commerce Park</b><p>Unit 4–12, Trent Way<br>Nottingham, NG2 4BX</p></div>
-            <div><small>REFERENCE</small><b>RCP Wayfinding Phase 2</b><p>Survey: SV-1098<br>Install target: 26 Oct 2026</p></div>
-            <div><small>VALID UNTIL</small><b>03 November 2026</b><p>30-day terms<br>VAT excluded</p></div>
-          </div>
-          <div class="notice"><span>i</span><p><b>Site survey linked</b> — 18 measurements, 24 photos and 3 access notes are available.</p><button>View survey</button></div>
-        </article>
+    <section class="workflow-grid">
+      <article class="workflow-card" id="labelsStep">
+        <div class="step-heading">
+          <span class="step-number">01</span>
+          <div><p>STEP ONE</p><h3>ADD TOOL LABELS</h3></div>
+        </div>
+        <p class="note-line">Each row is a separate label. Edit the text directly; all current edits are included when generating sheets.</p>
+        <div class="designer-actions"><div class="label-template-menu"><button class="button primary compact" id="addLabelRow" type="button" aria-haspopup="true" aria-expanded="false">+ ADD LABEL <span>▾</span></button><div class="label-template-options hidden" id="labelTemplateOptions" role="menu"></div></div><button class="button outline compact" id="designFontUpload">UPLOAD OTHER FONT</button><input type="file" id="designFontFile" accept=".ttf" hidden></div>
+        <p class="note-line">Poppins Regular is included. Select a row to preview it and use its text for the combined PDF name.</p>
+        <input id="labelFileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
+        <button class="drop-zone" id="labelDropZone" type="button">
+          <span class="drop-icon">+</span>
+          <strong>SELECT OR DROP PDF LABELS</strong>
+          <small id="dropHint">The selected files must match the template label size.</small>
+        </button>
+        <div id="labelList" class="label-table-wrap"></div>
+        <div class="designer-actions"><button id="designPreview" class="button outline compact">PREVIEW SELECTED</button><button id="designDownload" class="button outline compact">DOWNLOAD SELECTED PDF</button></div>
+        <p id="designNotice" class="note-line" role="status"></p>
+        <div id="designViewer" class="hidden" role="img" aria-label="Fitted label preview"><canvas id="designCanvas"></canvas></div>
+      </article>
+
+      <article class="workflow-card output-card" id="outputStep">
+        <div class="step-heading">
+          <span class="step-number">02</span>
+          <div><p>STEP TWO</p><h3>OUTPUT OPTIONS</h3></div>
+        </div>
+
+        <label class="field-label" for="templateSelect">A5 sheet layout</label>
+        <div class="select-row">
+          <select id="templateSelect"></select>
+          <button class="button outline compact" id="editTemplateButton" disabled>EDIT</button>
+        </div>
+        <div class="template-summary" id="templateSummary">
+          <div><span>LABEL SIZE</span><strong id="acceptedSize">-</strong></div>
+          <div><span>POSITIONS</span><strong id="slotCount">-</strong></div>
+          <div><span>PAGE</span><strong id="pageSize">-</strong></div>
+        </div>
+        <div class="note-line" id="detectionNote">Select a template to begin.</div>
+
+        <div class="option-group">
+          <p class="group-label">SHEET ARRANGEMENT</p>
+          <label class="radio-card">
+            <input type="radio" name="arrangement" value="separate" checked>
+            <span class="custom-radio"></span>
+            <span><strong>One label design per A5 sheet</strong><small>Fills every available position with the same uploaded label.</small></span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="arrangement" value="mixed">
+            <span class="custom-radio"></span>
+            <span><strong>Combine labels onto one A5 page</strong><small>Divides the available positions as evenly as possible between the uploaded labels.</small></span>
+          </label>
+        </div>
+
+        <div class="option-group two-column-options">
+          <label class="check-card">
+            <input type="checkbox" id="generateCombined" checked>
+            <span class="custom-check">✓</span>
+            <span><strong>Generate as a single PDF</strong><small>Each A5 sheet remains its own page.</small></span>
+          </label>
+          <label class="check-card">
+            <input type="checkbox" id="generateIndividual">
+            <span class="custom-check">✓</span>
+            <span><strong>Generate individual PDFs</strong><small>One A5 PDF for each generated sheet.</small></span>
+          </label>
+        </div>
 
         <article class="card schedule-card">
           <div class="schedule-heading">
@@ -58,6 +116,13 @@
             <button class="filter-btn active" data-filter="all">All <span id="allCount">4</span></button><button class="filter-btn" data-filter="exterior">Exterior <span>2</span></button><button class="filter-btn" data-filter="interior">Interior <span>2</span></button>
             <button class="icon-btn table-settings" title="Table settings">☷</button>
           </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="generate-panel">
+      <button class="button primary large" id="generateButton">GENERATE A5 SHEETS <span>→</span></button>
+    </section>
 
           <div class="quote-table">
             <div class="table-head"><span></span><span>ITEM / LOCATION</span><span>SPECIFICATION</span><span>QTY</span><span>UNIT</span><span>TOTAL</span><span></span></div>
@@ -66,26 +131,76 @@
           <button class="add-row" id="addItemBottom">＋ Add another sign or service</button>
         </article>
 
-        <article class="card notes-card">
-          <div><span class="section-kicker">TERMS &amp; NOTES</span><h2>Customer-facing information</h2></div>
-          <div class="notes-grid"><label><span>Quote introduction</span><textarea>Thank you for inviting ACM Signs to quote for the manufacture and installation of your new wayfinding scheme.</textarea></label><label><span>Production notes</span><textarea>Colours are subject to final artwork approval. Lead time is 15–20 working days from approval and deposit.</textarea></label></div>
-          <button class="text-btn">＋ Add internal note</button>
-        </article>
-      </section>
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header"><div><p class="eyebrow">APPLICATION SETTINGS</p><h2>SETTINGS</h2></div><button class="icon-button modal-close" data-close="settingsModal">×</button></div>
+      <div class="settings-content">
+        <label class="field-label" for="toolTemplateFolder">Label template folder</label>
+        <div class="folder-row"><input id="toolTemplateFolder"><button id="chooseToolFolder" class="button outline compact">BROWSE</button></div>
+        <div class="designer-actions"><button id="refreshToolTemplates" class="button outline compact">LOAD / REFRESH</button><button id="openToolFolder" class="button ghost compact">OPEN FOLDER</button></div>
+        <p id="toolTemplateErrors" class="note-line" role="status"></p>
+        <div class="settings-divider"></div>
+        <p class="group-label">CUT CONTOUR</p>
+        <div class="cut-contour-setting">
+          <span class="cut-swatch"></span>
+          <div><strong>SPOT COLOUR: CUTCONTOUR</strong><small>Alternate CMYK 11 / 100 / 0 / 0 · Stroke: 1 pt · Always applied</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <aside class="summary-column">
-        <article class="summary-card">
-          <div class="summary-title"><div><span class="section-kicker">QUOTE SUMMARY</span><h2>Pricing</h2></div><button class="icon-btn">⋯</button></div>
-          <div class="price-lines"><div><span>Products <small>15 units</small></span><b id="productTotal">£4,844.00</b></div><div><span>Artwork &amp; setup</span><b>£180.00</b></div><div><span>Installation <small>2-person crew</small></span><b>£980.00</b></div><div><span>Delivery</span><b>£85.00</b></div></div>
-          <button class="adjustment" id="discountButton"><span>＋ Add discount</span><b id="discountValue">—</b></button>
-          <div class="subtotal"><span>Subtotal</span><b id="subtotal">£6,089.00</b></div>
-          <div class="vat"><span>VAT <button>20%⌄</button></span><b id="vat">£1,217.80</b></div>
-          <div class="grand-total"><div><span>QUOTE TOTAL</span><small>GBP · VAT included</small></div><b id="grandTotal">£7,306.80</b></div>
-          <div class="margin-box"><div class="margin-header"><span>ESTIMATED MARGIN</span><b id="marginPercent">38.6%</b></div><div class="margin-track"><i></i></div><div class="margin-meta"><span>Cost <b id="estimatedCost">£3,738.45</b></span><span>Profit <b id="estimatedProfit">£2,350.55</b></span></div></div>
-          <div class="approval-check"><span>✓</span><p><b>Within margin rules</b><small>No manager approval required.</small></p></div>
-          <button class="btn primary full" id="reviewQuote">Review quote <span>→</span></button><button class="btn secondary full">Save as template</button>
-          <p class="summary-foot">Last calculated moments ago · Price list: <a href="#">Trade 2026</a></p>
-        </article>
+  <div class="modal-backdrop hidden" id="templateManagerModal">
+    <div class="modal large-modal">
+      <div class="modal-header"><div><p class="eyebrow">PERMANENT LIBRARY</p><h2>TEMPLATE MANAGER</h2></div><button class="icon-button modal-close" data-close="templateManagerModal">×</button></div>
+      <div class="manager-toolbar">
+        <input type="file" id="newTemplateInput" accept="application/pdf,.pdf" hidden>
+        <input type="file" id="importLibraryInput" accept=".atlaslabels,application/octet-stream" hidden>
+        <button class="button primary" id="addTemplateButton">+ ADD TEMPLATE</button>
+        <button class="button outline" id="addBlankTemplateButton">+ BLANK</button>
+        <button class="button outline" id="importLibraryButton">IMPORT LIBRARY</button>
+        <button class="button outline" id="exportLibraryButton">EXPORT LIBRARY</button>
+      </div>
+      <div class="manager-list" id="managerList"></div>
+      <div class="modal-footer-note">Templates and edits are stored automatically. Import and export are only needed for backups or moving the library to another computer.</div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="templateEditorModal">
+    <div class="modal editor-modal">
+      <div class="modal-header"><div><p class="eyebrow">TEMPLATE SETTINGS</p><h2 id="editorTitle">EDIT TEMPLATE</h2></div><button class="icon-button modal-close" data-close="templateEditorModal">×</button></div>
+      <div class="editor-layout">
+        <div class="editor-controls">
+          <label class="field-label">Template name<input id="editorName"></label>
+          <div class="dimension-row">
+            <label class="field-label">Label width (mm)<input id="editorWidth" type="number" min="1" step="0.01"></label>
+            <label class="field-label">Label height (mm)<input id="editorHeight" type="number" min="1" step="0.01"></label>
+          </div>
+          <div class="dimension-row position-fields">
+            <label class="field-label">Position X (mm)<input id="editorPositionX" type="number" min="0" step="0.01" disabled></label>
+            <label class="field-label">Position Y (mm)<input id="editorPositionY" type="number" min="0" step="0.01" disabled></label>
+          </div>
+          <p class="position-help">Select a position to set its distance from the page's left and bottom edges.</p>
+          <div class="editor-meta" id="editorMeta"></div>
+          <div class="editor-actions">
+            <button class="button outline" id="addSlotButton">+ ADD POSITION</button>
+            <button class="button outline" id="rotateSlotButton" disabled>ROTATE 90°</button>
+            <button class="button danger" id="deleteSlotButton" disabled>DELETE POSITION</button>
+          </div>
+          <div class="editor-actions secondary-actions">
+            <a class="button outline" id="openMasterLink" target="_blank">OPEN MASTER PDF</a>
+            <input id="replaceMasterInput" type="file" accept="application/pdf,.pdf" hidden>
+            <button class="button outline" id="replaceMasterButton">REPLACE MASTER</button>
+          </div>
+          <p class="editor-help">Drag positions to move them. Select a position before rotating or deleting it. The numbered map represents the saved A5 placement locations.</p>
+        </div>
+        <div class="page-map-wrap">
+          <div class="page-map" id="pageMap"></div>
+          <span class="page-map-label">A5 PLACEMENT MAP</span>
+        </div>
+      </div>
+      <div class="modal-actions"><button class="button ghost modal-close" data-close="templateEditorModal">CANCEL</button><button class="button primary" id="saveTemplateButton">SAVE TEMPLATE</button></div>
+    </div>
+  </div>
 
         <article class="activity-card card"><div class="card-heading"><div><span class="section-kicker">ACTIVITY</span><h3>Quote history</h3></div><button class="text-btn">View all</button></div><ul><li><span class="activity-dot green">✓</span><div><b>Survey attached</b><p>Jordan added SV-1098</p><small>Today, 09:42</small></div></li><li><span class="activity-dot">＋</span><div><b>Quote created</b><p>From “Wayfinding standard” template</p><small>Today, 09:31</small></div></li></ul></article>
       </aside>

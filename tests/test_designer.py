@@ -45,4 +45,18 @@ class DesignerTests(unittest.TestCase):
             backup=state.export_library();restored.import_library(backup)
             self.assertEqual(len(restored.list_templates()),2)
 
+    def test_create_blank_a5_template(self):
+        with tempfile.TemporaryDirectory() as folder:
+            state=AppState(AppPaths.create(Path(folder)))
+            template=state.create_blank_template()
+            self.assertEqual(template['name'],'Blank A5 Template')
+            self.assertEqual(template['slots'],[])
+            self.assertEqual(template['slot_count'],0)
+            self.assertTrue(template['is_a5'])
+            meta,path=state.get_template(template['id'])
+            page=PdfReader(path/'master.pdf').pages[0]
+            self.assertAlmostEqual(float(page.mediabox.width),148*72/25.4,places=3)
+            self.assertAlmostEqual(float(page.mediabox.height),210*72/25.4,places=3)
+            self.assertEqual(meta['detection_method'],'blank')
+
 if __name__=='__main__':unittest.main()

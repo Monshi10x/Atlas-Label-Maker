@@ -61,8 +61,10 @@ func completeBuild(path, identity string, files []*zip.File) bool {
  marker,err := os.ReadFile(filepath.Join(path,".bundle-complete"))
  if err!=nil || string(marker)!=identity {return false}
  for _, item := range files {
-  if item.FileInfo().IsDir() {continue}
-  stat,err := os.Stat(filepath.Join(path,filepath.FromSlash(item.Name)))
+  name,err := archiveEntryName(item.Name)
+  if err!=nil {return false}
+  if archiveEntryIsDir(item) {continue}
+  stat,err := os.Stat(filepath.Join(path,name))
   if err!=nil || !stat.Mode().IsRegular() || uint64(stat.Size())!=item.UncompressedSize64 {return false}
  }
  return true

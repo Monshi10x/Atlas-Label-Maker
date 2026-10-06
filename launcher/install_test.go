@@ -73,3 +73,43 @@ func TestArchiveTraversalRejected(t *testing.T) {
  if err:=extractZipBytes(b.Bytes(),filepath.Join(root,"app"));err==nil {t.Fatal("accepted traversal")}
  if _,err:=os.Stat(filepath.Join(root,"outside"));!os.IsNotExist(err) {t.Fatal("wrote outside destination")}
 }
+
+func TestWindowsLicenseDirectoryEntriesAndBuildReuse(t *testing.T) {
+ var b bytes.Buffer
+ archive := zip.NewWriter(&b)
+ for _, item := range [][2]string{
+  {"app.version", "1.3.1"},
+  {"atlas_label_maker.py", "app"},
+  {`static\index.html`, "html"},
+  {`vendor\pypdf\__init__.py`, "pdf"},
+  // Directory records without mode bits must never become ordinary files.
+  {`vendor\pypdfium2-5.3.0.dist-info\licenses\`, ""},
+  {`vendor\pypdfium2-5.3.0.dist-info\licenses\LICENSES\`, ""},
+  {`vendor\pypdfium2-5.3.0.dist-info\licenses\LICENSES\Apache-2.0.txt`, "license"},
+  {`vendor\pypdfium2-5.3.0.dist-info\licenses\data\windows_x64\BUILD_LICENSES\pdfium.txt`, "pdfium license"},
+  // A directory record after a child must be harmless as well.
+  {`vendor\pypdfium2-5.3.0.dist-info\licenses\data\`, ""},
+ } {
+  entry,err := archive.Create(item[0]); if err!=nil {t.Fatal(err)}
+  if _,err := entry.Write([]byte(item[1]));err!=nil {t.Fatal(err)}
+ }
+ if err := archive.Close();err!=nil {t.Fatal(err)}
+ root := t.TempDir()
+ installed,err := installApplication(root,"1.3.1",b.Bytes());if err!=nil {t.Fatal(err)}
+ license := filepath.Join(installed,"vendor","pypdfium2-5.3.0.dist-info","licenses","LICENSES","Apache-2.0.txt")
+ data,err := os.ReadFile(license);if err!=nil || string(data)!="license" {t.Fatalf("license missing: %v",err)}
+ again,err := installApplication(root,"1.3.1",b.Bytes());if err!=nil || again!=installed {t.Fatalf("completed build not reused: %q %v",again,err)}
+}
+
+func TestArchiveRejectsWindowsAndMixedTraversal(t *testing.T) {
+ for _, name := range []string{`..\outside`, `nested/..\..\outside`, `C:\outside`, `\\server\share\outside`, `/outside`, `vendor/file:stream`} {
+  t.Run(name,func(t *testing.T){
+   var b bytes.Buffer
+   archive := zip.NewWriter(&b)
+   entry,err := archive.Create(name);if err!=nil {t.Fatal(err)}
+   if _,err := entry.Write([]byte("bad"));err!=nil {t.Fatal(err)}
+   if err := archive.Close();err!=nil {t.Fatal(err)}
+   if err := extractZipBytes(b.Bytes(),filepath.Join(t.TempDir(),"app"));err==nil {t.Fatalf("accepted unsafe name %q",name)}
+  })
+ }
+}

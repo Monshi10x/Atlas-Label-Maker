@@ -1,3 +1,17 @@
+# Windows renderer unpacking fix validation
+
+- All 7 Go installer tests passed, including the renderer's nested license
+  tree with Windows separators and directory records lacking mode bits, reuse
+  of that installation, and 6 mixed/Windows path traversal rejection cases.
+- Python bundle regression passed: standard forward-slash file names, renderer
+  DLL and license preservation, cache exclusion and repeatable archive refresh.
+- Packaged the real application and Windows renderer with the new builder.
+  Installed and compared all 674 archive files byte for byte, then verified
+  completed-build reuse using the actual launcher installer on Linux.
+- Current launcher and bundle cross-compiled to a Windows AMD64 GUI EXE.
+
+LIMIT: Native Windows launch was not available in this cloud environment.
+
 # Version 1.3.1 validation
 
 - Python bootstrap checked with isolated Python (-I -S), an application path

@@ -1,3 +1,12 @@
+# Unreleased — Windows renderer license unpacking
+
+- Recognize Windows ZIP directory markers even when directory mode bits are
+  missing, and normalize separators during extraction and build verification.
+- Package with Python's standard ZIP writer, preserving renderer licenses and
+  omitting explicit directory records and bytecode caches.
+- Add regression checks for the license directory tree, completed-build reuse,
+  portable packaging and mixed-separator traversal rejection.
+
 # 1.3.1
 
 - Fixed startup failure when Windows denies replacing the installed App folder.

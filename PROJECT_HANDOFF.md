@@ -473,7 +473,7 @@ Future changes must be tested against both starter templates because they exerci
 
 - Windows 10/11
 - Go installed and available through `PATH`
-- PowerShell `Compress-Archive`
+- Python 3.12+ with the `py` launcher and pip
 
 ### Build
 
@@ -485,13 +485,15 @@ BUILD_WINDOWS.bat
 
 The build script:
 
-1. Deletes the previous `launcher/app_bundle.zip`
-2. Compresses `app/*` into `launcher/app_bundle.zip`
+1. Installs the pinned Windows PDF renderer and retains its license notices
+2. Uses `launcher/build_bundle.py` to atomically refresh `launcher/app_bundle.zip`
+   with standard forward-slash file entries; parent directories are created by
+   the installer rather than relying on PowerShell directory metadata
 3. Sets:
    - `GOOS=windows`
    - `GOARCH=amd64`
    - `CGO_ENABLED=0`
-4. Builds a GUI-subsystem executable:
+4. Runs the installer regression tests, then builds a GUI-subsystem executable:
 
 ```text
 Atlas_Tools_Label_Sheet_Builder.exe

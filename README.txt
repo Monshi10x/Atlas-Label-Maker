@@ -1,5 +1,12 @@
 ATLAS TOOLS LABEL SHEET BUILDER - VERSION 1.3.1
 
+FIX FOR RENDERER LICENSE-DIRECTORY UNPACKING ERRORS
+Update the features-6-10-26 checkout and rebuild with BUILD_WINDOWS.bat, then
+launch the newly built EXE. The build now uses standard ZIP paths, and the
+installer recognizes Windows directory records without creating them as files.
+Close the previous app normally first. No AppData deletion is required; saved
+templates, fonts, layouts and settings are retained.
+
 FIX FOR "APP-UPDATE ... ACCESS IS DENIED"
 This version no longer deletes or renames the installed App folder. Each
 build installs into its own AppVersions subfolder, and completed builds

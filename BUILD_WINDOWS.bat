@@ -14,8 +14,8 @@ rem pip retains upstream wheel metadata and third-party license notices.
 py -3 -m pip install --upgrade --no-deps --only-binary=:all: --platform win_amd64 --python-version 3.12 --implementation cp --abi cp312 --target app\vendor -r requirements.txt
 if errorlevel 1 exit /b 1
 
-if exist launcher\app_bundle.zip del /q launcher\app_bundle.zip
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path 'app\*' -DestinationPath 'launcher\app_bundle.zip' -CompressionLevel Optimal"
+rem Standard ZIP names avoid PowerShell's inconsistent directory entries.
+py -3 launcher\build_bundle.py
 if errorlevel 1 exit /b 1
 
 cd launcher

@@ -25,21 +25,6 @@
   </header>
 
   <main>
-    <section class="quote-header">
-      <div class="breadcrumbs"><a href="#">Quotes</a><span>/</span><span>Q-26047</span></div>
-      <div class="title-row">
-        <div class="quote-title"><button class="back-btn" aria-label="Back to quotes">←</button><div><div class="title-line"><h1>Riverside Commerce Park</h1><span class="status draft">DRAFT</span></div><p>Quote <b>#Q-26047</b> · Created 4 Oct 2026 by Jordan Miller</p></div></div>
-        <div class="header-buttons"><button class="btn secondary">⋯</button><button class="btn secondary">Preview PDF</button><button class="btn primary" id="sendQuote">Send quote <span>→</span></button></div>
-      </div>
-      <div class="stepper" aria-label="Quote progress">
-        <button class="step complete"><span>✓</span><div><small>01</small><b>Details</b></div></button><i></i>
-        <button class="step active"><span>2</span><div><small>02</small><b>Build quote</b></div></button><i></i>
-        <button class="step"><span>3</span><div><small>03</small><b>Review</b></div></button><i></i>
-        <button class="step"><span>4</span><div><small>04</small><b>Approval</b></div></button>
-        <div class="save-state"><span>✓</span> All changes saved <small>just now</small></div>
-      </div>
-    </section>
-
     <section class="workflow-grid">
       <article class="workflow-card" id="labelsStep">
         <div class="step-heading">
@@ -106,17 +91,22 @@
           </label>
         </div>
 
-        <article class="card schedule-card">
-          <div class="schedule-heading">
-            <div><span class="section-kicker">SIGN SCHEDULE</span><h2>Items <em id="itemCount">4</em></h2><p>Configure signs, production, installation and fulfilment in one schedule.</p></div>
-            <div class="schedule-actions"><button class="btn secondary" id="importSchedule">⇧ Import schedule</button><button class="btn primary" id="addItem">＋ Add sign</button></div>
-          </div>
-          <div class="schedule-tools">
-            <label class="search"><span>⌕</span><input id="itemSearch" placeholder="Search item, location or product…"></label>
-            <button class="filter-btn active" data-filter="all">All <span id="allCount">4</span></button><button class="filter-btn" data-filter="exterior">Exterior <span>2</span></button><button class="filter-btn" data-filter="interior">Interior <span>2</span></button>
-            <button class="icon-btn table-settings" title="Table settings">☷</button>
-          </div>
+        <div class="option-group">
+          <p class="group-label">ARTWORK EXPORT</p>
+          <label class="check-card">
+            <input type="checkbox" id="rasterizeArtwork" checked>
+            <span class="custom-check">✓</span>
+            <span><strong>Rasterize artwork</strong><small>Untick to keep vector artwork. CutContour always stays vector.</small></span>
+          </label>
+          <label class="field-label" for="rasterDpi">Resolution (DPI)
+            <input id="rasterDpi" type="number" min="72" max="1200" step="1" value="300">
+          </label>
         </div>
+        <label class="field-label" for="combinedName">Output name</label>
+        <input id="combinedName" readonly>
+        <p id="combinedNameHint" class="note-line"></p>
+        <label class="field-label" for="outputFolder">Output folder</label>
+        <div class="folder-row"><input id="outputFolder"><button id="chooseFolderButton" class="button outline compact">BROWSE</button></div>
       </article>
     </section>
 
@@ -124,12 +114,12 @@
       <button class="button primary large" id="generateButton">GENERATE A5 SHEETS <span>→</span></button>
     </section>
 
-          <div class="quote-table">
-            <div class="table-head"><span></span><span>ITEM / LOCATION</span><span>SPECIFICATION</span><span>QTY</span><span>UNIT</span><span>TOTAL</span><span></span></div>
-            <div id="lineItems"></div>
-          </div>
-          <button class="add-row" id="addItemBottom">＋ Add another sign or service</button>
-        </article>
+    <section class="result-panel hidden" id="resultPanel" aria-live="polite">
+      <div><h3 id="resultTitle"></h3><p id="resultText"></p></div>
+      <button class="button outline" id="openFolderButton">OPEN OUTPUT FOLDER</button>
+    </section>
+    <p id="appStatus" class="note-line"></p>
+  </main>
 
   <div class="modal-backdrop hidden" id="settingsModal">
     <div class="modal">
@@ -202,30 +192,16 @@
     </div>
   </div>
 
-        <article class="activity-card card"><div class="card-heading"><div><span class="section-kicker">ACTIVITY</span><h3>Quote history</h3></div><button class="text-btn">View all</button></div><ul><li><span class="activity-dot green">✓</span><div><b>Survey attached</b><p>Jordan added SV-1098</p><small>Today, 09:42</small></div></li><li><span class="activity-dot">＋</span><div><b>Quote created</b><p>From “Wayfinding standard” template</p><small>Today, 09:31</small></div></li></ul></article>
-      </aside>
+  <div class="modal-backdrop hidden" id="confirmModal">
+    <div class="modal confirm-modal">
+      <h2 id="confirmTitle"></h2><p id="confirmText"></p>
+      <div class="modal-actions"><button class="button ghost" id="confirmCancel">CANCEL</button><button class="button primary" id="confirmAccept">CONFIRM</button></div>
     </div>
-  </main>
-
-  <div class="toast" id="toast" role="status"></div>
-  <dialog id="sendDialog"><button class="dialog-close" aria-label="Close">×</button><span class="send-icon">↗</span><h2>Ready to send?</h2><p>The quote PDF and acceptance link will be emailed to Amelia Hart.</p><label>Recipient<input value="amelia@riverside.co.uk"></label><label>Message<textarea>Hi Amelia, please find our quotation for the Riverside Commerce Park wayfinding scheme.</textarea></label><div><button class="btn secondary dialog-cancel">Cancel</button><button class="btn primary dialog-confirm">Send quote →</button></div></dialog>
-
-  <template id="lineItemTemplate">
-    <article class="line-item" data-category="exterior">
-      <div class="item-summary">
-        <button class="drag" title="Drag to reorder">⠿</button>
-        <button class="item-identity toggle-details"><span class="thumb"><i>ACM</i></span><span><small class="item-code">S-01 · EXTERIOR</small><b class="item-name">Monolith directory sign</b><em class="item-location">Main vehicle entrance</em></span></button>
-        <button class="spec-summary toggle-details"><b class="item-size">2400 × 900 mm</b><span class="item-material">Aluminium tray · printed vinyl</span><em><i></i> Artwork required</em></button>
-        <label class="qty-field"><button class="qty-minus">−</button><input class="qty" type="number" value="1" min="1"><button class="qty-plus">＋</button></label>
-        <div class="unit-price">£1,895.00</div><div class="line-total">£1,895.00</div>
-        <button class="more-btn">•••</button>
-      </div>
-      <div class="item-details">
-        <div class="preview-panel"><div class="sign-preview"><div class="preview-sign"><strong>RIVERSIDE</strong><small>COMMERCE PARK</small><hr><span>Reception <b>→</b></span><span>Units 4–8 <b>→</b></span><span>Units 9–12 <b>→</b></span></div><i></i></div><button>Replace artwork</button></div>
-        <div class="config-panel"><div class="config-title"><div><b>Item configuration</b><span class="configured">✓ Complete</span></div><button class="toggle-details">Hide details ↑</button></div><div class="config-grid"><label>Product<select><option>Freestanding monolith</option><option>Post &amp; panel sign</option><option>Wall sign</option></select></label><label>Finished size<div class="size-fields"><input value="2400"><span>×</span><input value="900"><em>mm</em></div></label><label>Face material<select><option>3 mm aluminium tray</option><option>5 mm aluminium composite</option><option>Acrylic</option></select></label><label>Graphic finish<select><option>Digitally printed vinyl + laminate</option><option>Cut vinyl</option><option>Painted finish</option></select></label><label>Structure / fixing<select><option>Powder-coated internal frame</option><option>Direct wall fix</option><option>Posts and clips</option></select></label><label>Colour<button class="colour-select"><i></i><span>RAL 7016 · Anthracite grey</span><b>⌄</b></button></label></div><div class="extras"><span>INCLUDED SERVICES</span><label><input type="checkbox" checked> Artwork setup <b>£65.00</b></label><label><input type="checkbox" checked> Installation <b>£420.00</b></label><label><input type="checkbox"> Site delivery only <b>£85.00</b></label></div><label class="item-note"><span>Production note <small>Internal only</small></span><input placeholder="Add manufacturing, fixing or access instructions…"></label></div>
-      </div>
-    </article>
-  </template>
+  </div>
+  <div class="busy-overlay hidden" id="busyOverlay" role="status" aria-live="polite">
+    <div class="busy-card"><strong id="busyTitle"></strong><span id="busyText"></span></div>
+  </div>
+  <div id="toastStack" class="toast-stack" role="status" aria-live="polite"></div>
   <script src="/static/app.js"></script>
 </body>
 </html>

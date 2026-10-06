@@ -40,6 +40,7 @@ if str(VENDOR_DIR) not in sys.path:
 
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import (
+    DecodedStreamObject,
     ArrayObject,
     ContentStream,
     DictionaryObject,
@@ -50,6 +51,7 @@ from pypdf.generic import (
 
 
 from label_designer import create_label, read_font
+from pdf_export import export_options, rasterize_artwork
 
 
 class AppError(Exception):
@@ -559,6 +561,10 @@ class AppState:
             shutil.rmtree(staging, ignore_errors=True)
 
     def generate(self, payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            rasterize, dpi = export_options(payload)
+        except ValueError as exc:
+            raise AppError(str(exc)) from exc
         template_id = str(payload.get("template_id", ""))
         template, template_folder = self.get_template(template_id)
         tokens = list(payload.get("label_tokens", []))
@@ -614,7 +620,15 @@ class AppState:
         for upload in uploads:
             reader = PdfReader(upload["path"])
             readers[upload["token"]] = reader
-            pages[upload["token"]] = reader.pages[0]
+            try:
+                pages[upload["token"]] = rasterize_artwork(reader.pages[0], dpi) if rasterize else reader.pages[0]
+            except ValueError as exc:
+                raise AppError(str(exc)) from exc
+
+        self.settings["rasterize"] = rasterize
+        if rasterize:
+            self.settings["raster_dpi"] = dpi
+        self._save_settings()
 
         created: list[str] = []
         combined_writer = PdfWriter() if make_combined else None
@@ -632,12 +646,14 @@ class AppState:
                     filename = sanitize_filename(f"{sheet_name} A5 Sheet.pdf", force_ext=".pdf")
                 target = unique_path(output_folder / filename)
                 with target.open("wb") as f:
+                    individual_writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
                     individual_writer.write(f)
                 created.append(str(target))
 
         if combined_writer is not None:
             target = unique_path(output_folder / combined_name)
             with target.open("wb") as f:
+                combined_writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
                 combined_writer.write(f)
             created.insert(0, str(target))
 
@@ -968,15 +984,35 @@ def build_sheet_page(
     assignments: list[dict[str, Any]],
     pages: dict[str, Any],
 ) -> Any:
-    # Keep any static artwork, registration marks, or background content from
-    # the saved master. Replacement labels are placed exactly over the stored
-    # label positions, matching a relink operation while remaining independent
-    # of Illustrator.
-    page = writer.add_page(master_page)
+    # The master is a layout reference, not an artwork layer. Starting empty
+    # removes its sample labels and old cuts rather than hiding them underneath.
+    page = writer.add_blank_page(width=float(master_page.mediabox.width), height=float(master_page.mediabox.height))
+    xobjects = DictionaryObject()
+    page[NameObject('/Resources')] = DictionaryObject({NameObject('/XObject'): xobjects})
+    content = ContentStream(None, writer)
+    label_forms = {}
     for slot, upload in zip(slots, assignments):
-        source_page = pages[upload["token"]]
-        page.merge_transformed_page(source_page, slot["matrix"], over=True, expand=False)
+        token = upload['token']
+        if token not in label_forms:
+            source_page = pages[token]
+            form = DecodedStreamObject()
+            form.update({NameObject('/Type'): NameObject('/XObject'), NameObject('/Subtype'): NameObject('/Form'),
+                         NameObject('/BBox'): source_page.trimbox.clone(writer),
+                         NameObject('/Resources'): source_page.get('/Resources', DictionaryObject()).clone(writer)})
+            if '/Group' in source_page:
+                form[NameObject('/Group')] = source_page['/Group'].clone(writer)
+            source_content = source_page.get_contents()
+            form.set_data(source_content.get_data() if source_content is not None else b'')
+            name = NameObject('/AtlasLabel' + str(len(label_forms)))
+            xobjects[name] = writer._add_object(form)
+            label_forms[token] = name
+        # Reuse one complete label form rather than cloning its fonts, images
+        # and artwork for every placement on the sheet.
+        content.operations.extend([([], b'q'), ([FloatObject(value) for value in slot['matrix']], b'cm'),
+                                   ([label_forms[token]], b'Do'), ([], b'Q')])
+    page.replace_contents(content)
     add_cut_contour_border(page, writer)
+    page.compress_content_streams()
     return page
 
 
@@ -1158,6 +1194,16 @@ class Handler(BaseHTTPRequestHandler):
                 if payload.get('source_token') and not payload.get('editable',True):
                     data=Path(self.state.get_upload(payload['source_token'])['path']).read_bytes()
                 else:data, sizes = self.state.designer_pdf(payload)
+                if payload.get('rasterize', False):
+                    try:
+                        _, dpi = export_options(payload)
+                        writer = PdfWriter()
+                        writer.add_page(rasterize_artwork(PdfReader(io.BytesIO(data)).pages[0], dpi))
+                        output = io.BytesIO()
+                        writer.write(output)
+                        data = output.getvalue()
+                    except ValueError as exc:
+                        raise AppError(str(exc)) from exc
                 self.send_bytes(data, "application/pdf")
             elif path == "/api/designer/add":
                 self.send_json(self.state.designer_add(self.read_json()), status=201)

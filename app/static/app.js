@@ -27,6 +27,8 @@
     dropHint: $("dropHint"),
     generateCombined: $("generateCombined"),
     generateIndividual: $("generateIndividual"),
+    rasterize: $("rasterizeArtwork"),
+    rasterDpi: $("rasterDpi"),
     combinedName: $("combinedName"),
     outputFolder: $("outputFolder"),
     generateButton: $("generateButton"),
@@ -88,7 +90,8 @@
   $("designFontFile").addEventListener('change', async () => {const file = $("designFontFile").files[0]; if(!file) return; showBusy('SAVING FONT'); try {if(file.size > 10 * 1024 * 1024) throw Error('Font must be under 10 MB.'); await api('/api/designer/font', {method: 'POST', body: file}); customFont = true; renderUploads(); clearDesignPreview(); toast('Font saved. Choose Uploaded in the row font selector to use it.');} catch(e) {toast(e.message, 'error');} finally {hideBusy(); $("designFontFile").value = '';} });
   async function previewSelected(download) {
     const row = activeRow(); if(!row) return toast('Add or select a label row.', 'error');
-    clearDesignPreview(); const generation = previewGeneration; const payload = rowPayload(row); showBusy('CREATING LABEL');
+    if(download && !validExportDpi()) return;
+    clearDesignPreview(); const generation = previewGeneration; const payload = {...rowPayload(row), ...(download ? {rasterize: el.rasterize.checked, raster_dpi: Number(el.rasterDpi.value)} : {})}; showBusy('CREATING LABEL');
     try {
       const response = await api('/api/designer/preview', jsonPost(payload)); const blob = await response.blob(); if(generation !== previewGeneration) return; previewUrl = URL.createObjectURL(blob);
       if(download) {const a = document.createElement('a'); a.href = previewUrl; a.download = el.combinedName.value + '.pdf'; a.click();}
@@ -167,7 +170,10 @@
     const payload = await api("/api/status");
     state.settings = payload.settings || {};
     state.lastOutputFolder = state.settings.last_output_folder || "";
-    el.outputFolder.value = state.last_output_folder || "";
+    el.outputFolder.value = state.lastOutputFolder;
+    el.rasterize.checked = state.settings.rasterize ?? true;
+    el.rasterDpi.value = state.settings.raster_dpi ?? 300;
+    el.rasterDpi.disabled = !el.rasterize.checked;
     syncCombinedName();
   }
 
@@ -626,6 +632,17 @@
     finally {hideBusy();}
   }
 
+  function validExportDpi() {
+    if(!el.rasterize.checked) return true;
+    const dpi = Number(el.rasterDpi.value);
+    if(!Number.isInteger(dpi) || dpi < 72 || dpi > 1200) {
+      toast("Choose a whole-number resolution from 72 to 1200 DPI.", "error");
+      el.rasterDpi.focus();
+      return false;
+    }
+    return true;
+  }
+
   async function generate() {
     const template = selectedTemplate();
     if(!template) return toast("Choose a template.", "error");
@@ -634,12 +651,13 @@
     if(mismatches.length) return toast("Remove or correct the label files marked SIZE MISMATCH.", "error");
     if(!el.generateCombined.checked && !el.generateIndividual.checked) return toast("Select at least one output option.", "error");
     if(!el.outputFolder.value.trim()) return toast("Choose an output folder.", "error");
+    if(!validExportDpi()) return;
     const mixed = document.querySelector('input[name="arrangement"]:checked')?.value === "mixed";
     if(mixed && state.uploads.length > template.slot_count) {
       return toast(`This template only has ${template.slot_count} positions.`, "error");
     }
 
-    showBusy("GENERATING A5 SHEETS", "Placing vector PDFs and applying the CutContour page border…");
+    showBusy("GENERATING A5 SHEETS", el.rasterize.checked ? `Rasterizing artwork at ${el.rasterDpi.value} DPI; keeping CutContour vector…` : "Placing vector artwork and applying CutContour…");
     el.generateButton.disabled = true;
     try {
       const payload = await api("/api/generate", {
@@ -653,6 +671,8 @@
           generate_individual: el.generateIndividual.checked,
           combined_name: el.combinedName.value || "Atlas Tool Labels",
           output_folder: el.outputFolder.value,
+          rasterize: el.rasterize.checked,
+          raster_dpi: Number(el.rasterDpi.value),
         }),
       });
       state.lastOutputFolder = payload.output_folder;
@@ -699,6 +719,7 @@
     el.labelDropZone.addEventListener("drop", (event) => uploadLabels([...event.dataTransfer.files].filter((f) => f.name.toLowerCase().endsWith(".pdf"))));
 
     el.generateCombined.addEventListener("change", () => {el.combinedName.disabled = !el.generateCombined.checked;});
+    el.rasterize.addEventListener("change", () => {el.rasterDpi.disabled = !el.rasterize.checked;});
     $("chooseFolderButton").addEventListener("click", chooseFolder);
     el.generateButton.addEventListener("click", generate);
     el.openFolderButton.addEventListener("click", async () => {
@@ -782,17 +803,5 @@
     window.setInterval(() => fetch("/api/ping").catch(() => { }), 20000);
   }
 
-  document.getElementById('addItem').addEventListener('click', addProduct);
-  document.getElementById('addItemBottom').addEventListener('click', addProduct);
-  document.getElementById('itemSearch').addEventListener('input', applyFilters);
-  document.querySelectorAll('.filter-btn').forEach(button => button.addEventListener('click', () => {activeFilter = button.dataset.filter; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === button)); applyFilters();}));
-  document.getElementById('importSchedule').addEventListener('click', () => toast('Schedule importer ready for CSV or XLSX files'));
-  document.getElementById('discountButton').addEventListener('click', () => {discount = discount ? 0 : 250; calculate(); toast(discount ? 'Trade discount of £250 applied' : 'Discount removed');});
-  document.getElementById('reviewQuote').addEventListener('click', () => {window.scrollTo({top: 0, behavior: 'smooth'}); toast('Quote checked — all required specifications are complete');});
-  const dialog = document.getElementById('sendDialog');
-  document.getElementById('sendQuote').addEventListener('click', () => dialog.showModal());
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
-  dialog.querySelector('.dialog-cancel').addEventListener('click', () => dialog.close());
-  dialog.querySelector('.dialog-confirm').addEventListener('click', () => {dialog.close(); document.querySelector('.status').textContent = 'SENT'; document.querySelector('.status').style.background = '#e5f3ee'; document.querySelector('.status').style.color = '#096b5b'; toast('Quote sent to Amelia Hart');});
-  render();
+  init();
 })();

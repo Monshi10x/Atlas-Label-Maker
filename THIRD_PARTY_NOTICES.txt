@@ -5,3 +5,6 @@ app/label_assets/POPPINS_LICENSE.txt
 PDF.js (Apache 2.0): app/static/pdfjs/LICENSE
 PDF.js font/WASM resource licenses are retained in their subdirectories.
 Atlas artwork is retained from the supplied user PDFs.
+pypdfium2 5.3.0 (Apache-2.0 / BSD-3-Clause): installed from requirements.txt.
+PDFium and its third-party licenses are retained in the bundled wheel metadata
+and pypdfium2_raw package when building the Windows EXE.

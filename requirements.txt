@@ -1,0 +1,2 @@
+# Native PDF renderer for raster artwork exports; PDF manipulation stays vendored.
+pypdfium2==5.3.0

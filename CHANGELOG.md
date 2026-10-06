@@ -60,3 +60,13 @@ All notable changes to Atlas Tools Label Sheet Builder should be recorded here.
 - CutContour alternate CMYK values are 11 / 100 / 0 / 0
 - Template library format version is 1
 - Source handoff documentation added after the initial package release
+# Unreleased — features-6-10-26
+
+- Build exports on an empty sheet using the master dimensions and placement
+  map, removing duplicate sample artwork and old cut lines.
+- Add Rasterize artwork (on by default), a 300 DPI default with adjustable
+  resolution, and a vector opt-out for sheet and selected-label exports.
+- Keep label CutContour paths and the A5 border as vector spot colour in both
+  modes; compress raster images and reuse label resources across placements.
+- Restore missing output controls and application initialization, and bundle
+  the pinned PDF renderer in Windows builds.

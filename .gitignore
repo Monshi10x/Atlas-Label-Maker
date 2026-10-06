@@ -1,1 +1,6 @@
 Atlas_Tools_Label_Sheet_Builder.exe
+__pycache__/
+app/vendor/pypdfium2/
+app/vendor/pypdfium2_raw/
+app/vendor/pypdfium2-*.dist-info/
+app/vendor/bin/

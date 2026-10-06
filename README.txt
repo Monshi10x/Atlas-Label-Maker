@@ -13,9 +13,15 @@ AppData or run as administrator. The Python shortcut below also works.
 RUN
 Extract the entire ZIP. With Python installed, double-click
 RUN_WITH_PYTHON.bat. The app opens in your browser; keep the command window
-open while using it. No pip install is required.
+open while using it. The shortcut installs the pinned PDF renderer into
+app/vendor on first use (internet access required for dependency installation).
 
-To build a Windows EXE, install Go and run BUILD_WINDOWS.bat. The EXE appears
+On Linux/macOS, use Python 3.12 or newer:
+python -m pip install --no-deps --only-binary=:all: -r requirements.txt
+python app/atlas_label_maker.py --data-root /path/to/atlas-data --port 8765
+
+To build a Windows EXE, install Go and Python 3.12+ and run BUILD_WINDOWS.bat.
+The build downloads the pinned Windows PDF renderer with pip. The EXE appears
 beside this README. Its first launch downloads its private Python runtime.
 No prebuilt EXE is included. All source and bundled dependencies are included.
 
@@ -43,6 +49,18 @@ row is included in sheet generation, not just the selected row. Every
 editable row is regenerated and validated before sheets are written. A row
 with invalid/overlong text blocks output with its row number. CutContour
 remains a 1 pt spot-colour border on every generated A5 page.
+
+EXPORT ARTWORK
+Sheet masters supply only page dimensions and placement positions. Their
+sample artwork and old cut paths are removed before new labels are placed.
+Rasterize artwork is enabled by default at 300 DPI. Choose a whole-number
+resolution from 72 to 1200 DPI, or untick it to preserve vector artwork.
+The setting applies to A5 exports and DOWNLOAD SELECTED PDF; previews remain
+vector. Existing label CutContour paths and the A5 CutContour border remain
+vector spot-colour paths in both modes. Raster images are losslessly compressed
+and reused within a PDF. File size depends on the artwork and chosen DPI;
+rasterization is not guaranteed to make every PDF smaller. The Windows build
+bundles the renderer for its private Python runtime.
 
 PDF PREVIEW
 The actual PDF is rendered using bundled PDF.js. It scales up or down to

@@ -70,7 +70,7 @@ For every uploaded replacement PDF:
 
 - Create one A5 sheet
 - Fill every template slot with that same replacement label
-- Preserve the master’s static artwork and all stored slot transforms
+- Use the master’s page dimensions and stored slot transforms; discard its artwork and old cuts
 
 #### Combine into one page
 
@@ -416,14 +416,20 @@ Process:
 1. Load the selected template and stored slots
 2. Validate every replacement-label PDF against the accepted dimensions
 3. Load page 1 of each replacement PDF
-4. Add the saved master page to a new writer
-5. Overlay each assigned replacement PDF with its stored slot matrix
+4. Create a blank page with the saved master’s dimensions
+5. Place each assigned replacement PDF with its stored slot matrix (raster artwork by default at 300 DPI, with its CutContour paths retained as vector)
 6. Add the CutContour border
 7. Write combined and/or individual outputs
 
 Only the first page of each replacement-label PDF is used.
 
-The master page is retained so any static artwork, registration marks, or backgrounds remain present.
+The master is used only as a layout reference. Its sample artwork, backgrounds,
+registration marks and old cut paths are removed, preventing doubled artwork
+and cuts underneath replacement labels. Rasterize artwork can be unticked for
+vector output; the DPI setting accepts whole numbers from 72 to 1200. Existing
+label CutContour paths and the generated A5 border remain vector spot colour.
+Rasterization uses the pinned pypdfium2 renderer in requirements.txt; the Windows
+build bundles its Windows wheel into app/vendor before packaging.
 
 Relevant functions:
 
@@ -568,9 +574,11 @@ Render generated PDFs and compare:
 - Scaling
 - Rotation
 - No unexpected cropping
-- No artwork rasterisation introduced by the application
+- Vector artwork retained when Rasterize artwork is unticked
+- Raster image dimensions match the selected DPI when enabled
+- CutContour paths stay vector and are absent from raster image pixels
 - A5 MediaBox remains correct
-- Static master artwork remains intact
+- Master artwork and old cuts are absent from generated sheets
 
 ---
 

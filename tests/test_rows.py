@@ -18,7 +18,7 @@ class RowTests(unittest.TestCase):
             self.assertEqual(first['title'],'ORIGINAL')
             rows=[{'source_token':first['token'],'editable':True,'title':'FIRST EDIT','specification':'6x15 DLC'},
                   {'source_token':second['token'],'editable':True,'title':'SECOND EDIT','specification':'8x25 DLC'}]
-            opts={'template_id':'1'*32,'generate_combined':True,'combined_name':'Tool Label - FIRST EDIT 6x15 DLC','output_folder':str(root/'out'),'label_rows':rows}
+            opts={'template_id':'1'*32,'rasterize':False,'generate_combined':True,'combined_name':'Tool Label - FIRST EDIT 6x15 DLC','output_folder':str(root/'out'),'label_rows':rows}
             result=state.generate_rows(opts)
             pages=PdfReader(result['created'][0]).pages
             self.assertEqual(len(pages),2)

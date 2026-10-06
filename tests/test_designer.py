@@ -24,7 +24,7 @@ class DesignerTests(unittest.TestCase):
             a=state.designer_add({'title':'Compression Spiral','specification':'6x22 DLC'})['upload']
             b=state.designer_add({'title':'Up-Spiral','specification':'8x25 DLC'})['upload']
             for mixed in (False,True):
-                result=state.generate({'template_id':'1'*32,'label_tokens':[a['token'],b['token']],
+                result=state.generate({'template_id':'1'*32,'rasterize':False,'label_tokens':[a['token'],b['token']],
                     'combine_one_page':mixed,'generate_combined':True,'generate_individual':True,
                     'output_folder':str(Path(folder)/'out'),'combined_name':'test'})
                 self.assertEqual(result['page_count'],1 if mixed else 2)
@@ -36,7 +36,7 @@ class DesignerTests(unittest.TestCase):
             writer=PdfWriter();writer.add_blank_page(width=35*72/25.4,height=35*72/25.4)
             buf=io.BytesIO();writer.write(buf)
             collet=state.store_label_upload('Collet.pdf',buf.getvalue())
-            state.generate({'template_id':'2'*32,'label_tokens':[collet['token']], 'generate_combined':True,
+            state.generate({'template_id':'2'*32,'rasterize':False,'label_tokens':[collet['token']], 'generate_combined':True,
                 'output_folder':str(Path(folder)/'out'),'combined_name':'collet'})
             with self.assertRaises(AppError):
                 state.generate({'template_id':'2'*32,'label_tokens':[a['token']]})

@@ -29,6 +29,8 @@
     generateIndividual: $("generateIndividual"),
     rasterize: $("rasterizeArtwork"),
     rasterDpi: $("rasterDpi"),
+    rasterizeText: $("rasterizeText"),
+    a5CutContour: $("a5CutContour"),
     combinedName: $("combinedName"),
     outputFolder: $("outputFolder"),
     generateButton: $("generateButton"),
@@ -91,7 +93,7 @@
   async function previewSelected(download) {
     const row = activeRow(); if(!row) return toast('Add or select a label row.', 'error');
     if(download && !validExportDpi()) return;
-    clearDesignPreview(); const generation = previewGeneration; const payload = {...rowPayload(row), ...(download ? {rasterize: el.rasterize.checked, raster_dpi: Number(el.rasterDpi.value)} : {})}; showBusy('CREATING LABEL');
+    clearDesignPreview(); const generation = previewGeneration; const payload = {...rowPayload(row), ...(download ? {export: true, rasterize: el.rasterize.checked, raster_dpi: Number(el.rasterDpi.value), rasterize_text: el.rasterizeText.checked} : {})}; showBusy('CREATING LABEL');
     try {
       const response = await api('/api/designer/preview', jsonPost(payload)); const blob = await response.blob(); if(generation !== previewGeneration) return; previewUrl = URL.createObjectURL(blob);
       if(download) {const a = document.createElement('a'); a.href = previewUrl; a.download = el.combinedName.value + '.pdf'; a.click();}
@@ -174,6 +176,9 @@
     el.rasterize.checked = state.settings.rasterize ?? true;
     el.rasterDpi.value = state.settings.raster_dpi ?? 300;
     el.rasterDpi.disabled = !el.rasterize.checked;
+    el.rasterizeText.checked = state.settings.rasterize_text ?? true;
+    el.rasterizeText.disabled = !el.rasterize.checked;
+    el.a5CutContour.checked = state.settings.a5_cut_contour ?? true;
     syncCombinedName();
   }
 
@@ -673,6 +678,8 @@
           output_folder: el.outputFolder.value,
           rasterize: el.rasterize.checked,
           raster_dpi: Number(el.rasterDpi.value),
+          rasterize_text: el.rasterizeText.checked,
+          a5_cut_contour: el.a5CutContour.checked,
         }),
       });
       state.lastOutputFolder = payload.output_folder;
@@ -719,7 +726,7 @@
     el.labelDropZone.addEventListener("drop", (event) => uploadLabels([...event.dataTransfer.files].filter((f) => f.name.toLowerCase().endsWith(".pdf"))));
 
     el.generateCombined.addEventListener("change", () => {el.combinedName.disabled = !el.generateCombined.checked;});
-    el.rasterize.addEventListener("change", () => {el.rasterDpi.disabled = !el.rasterize.checked;});
+    el.rasterize.addEventListener("change", () => {el.rasterDpi.disabled = !el.rasterize.checked; el.rasterizeText.disabled = !el.rasterize.checked;});
     $("chooseFolderButton").addEventListener("click", chooseFolder);
     el.generateButton.addEventListener("click", generate);
     el.openFolderButton.addEventListener("click", async () => {

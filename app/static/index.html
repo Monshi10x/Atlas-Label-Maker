@@ -98,9 +98,20 @@
             <span class="custom-check">✓</span>
             <span><strong>Rasterize artwork</strong><small>Untick to keep vector artwork. CutContour always stays vector.</small></span>
           </label>
+          <label class="check-card">
+            <input type="checkbox" id="rasterizeText" checked>
+            <span class="custom-check">✓</span>
+            <span><strong>Rasterize created text</strong><small>Untick to keep edited tool names and specifications as vector text.</small></span>
+          </label>
           <label class="field-label" for="rasterDpi">Resolution (DPI)
             <input id="rasterDpi" type="number" min="72" max="1200" step="1" value="300">
           </label>
+          <label class="check-card">
+            <input type="checkbox" id="a5CutContour" checked>
+            <span class="custom-check">✓</span>
+            <span><strong>A5 perimeter cut contour</strong><small>Add a cut around the whole sheet. Label cuts remain included.</small></span>
+          </label>
+          <p class="note-line">PDF layers: artwork and cut. All cut contours remain vector on the cut layer.</p>
         </div>
         <label class="field-label" for="combinedName">Output name</label>
         <input id="combinedName" readonly>
@@ -133,7 +144,7 @@
         <p class="group-label">CUT CONTOUR</p>
         <div class="cut-contour-setting">
           <span class="cut-swatch"></span>
-          <div><strong>SPOT COLOUR: CUTCONTOUR</strong><small>Alternate CMYK 11 / 100 / 0 / 0 · Stroke: 1 pt · Always applied</small></div>
+          <div><strong>SPOT COLOUR: CUTCONTOUR</strong><small>Vector paths on the cut layer · A5 perimeter: 1 pt, optional in Output Options</small></div>
         </div>
       </div>
     </div>

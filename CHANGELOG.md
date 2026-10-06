@@ -1,3 +1,11 @@
+# Unreleased — export layers and text rasterization
+
+- Add a toggle for the A5 perimeter CutContour while retaining label cuts.
+- Put all vector CutContour paths on a PDF layer named cut and artwork/text
+  on a separate artwork layer, for sheets and selected-label downloads.
+- Add Rasterize created text: untick to keep edited tool names/specifications
+  vector while rasterizing the artwork. Persist both new export options.
+
 # Unreleased — Windows renderer license unpacking
 
 - Recognize Windows ZIP directory markers even when directory mode bits are

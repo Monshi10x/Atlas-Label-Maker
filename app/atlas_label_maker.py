@@ -51,7 +51,7 @@ from pypdf.generic import (
 
 
 from label_designer import create_label, read_font
-from pdf_export import export_options, rasterize_artwork
+from pdf_export import export_options, prepare_export_parts, export_layers, add_export_form, export_label_pdf
 
 
 class AppError(Exception):
@@ -621,11 +621,13 @@ class AppState:
             reader = PdfReader(upload["path"])
             readers[upload["token"]] = reader
             try:
-                pages[upload["token"]] = rasterize_artwork(reader.pages[0], dpi) if rasterize else reader.pages[0]
+                pages[upload["token"]] = prepare_export_parts(reader.pages[0], rasterize, dpi, payload.get('rasterize_text', True))
             except ValueError as exc:
                 raise AppError(str(exc)) from exc
 
         self.settings["rasterize"] = rasterize
+        self.settings["rasterize_text"] = payload.get('rasterize_text', True)
+        self.settings["a5_cut_contour"] = payload.get('a5_cut_contour', True)
         if rasterize:
             self.settings["raster_dpi"] = dpi
         self._save_settings()
@@ -635,11 +637,11 @@ class AppState:
 
         for sheet_index, (sheet_name, sheet_uploads) in enumerate(assignments, start=1):
             if combined_writer is not None:
-                build_sheet_page(combined_writer, template, master_page, slots, sheet_uploads, pages)
+                build_sheet_page(combined_writer, template, master_page, slots, sheet_uploads, pages, payload.get('a5_cut_contour', True))
 
             if make_individual:
                 individual_writer = PdfWriter()
-                build_sheet_page(individual_writer, template, master_page, slots, sheet_uploads, pages)
+                build_sheet_page(individual_writer, template, master_page, slots, sheet_uploads, pages, payload.get('a5_cut_contour', True))
                 if combine_one_page:
                     filename = sanitize_filename(f"{Path(combined_name).stem} A5 Sheet.pdf", force_ext=".pdf")
                 else:
@@ -983,40 +985,36 @@ def build_sheet_page(
     slots: list[dict[str, Any]],
     assignments: list[dict[str, Any]],
     pages: dict[str, Any],
+    a5_cut_contour: bool = True,
 ) -> Any:
     # The master is a layout reference, not an artwork layer. Starting empty
     # removes its sample labels and old cuts rather than hiding them underneath.
     page = writer.add_blank_page(width=float(master_page.mediabox.width), height=float(master_page.mediabox.height))
     xobjects = DictionaryObject()
     page[NameObject('/Resources')] = DictionaryObject({NameObject('/XObject'): xobjects})
+    layers = export_layers(writer, page)
     content = ContentStream(None, writer)
     label_forms = {}
-    for slot, upload in zip(slots, assignments):
-        token = upload['token']
-        if token not in label_forms:
-            source_page = pages[token]
-            form = DecodedStreamObject()
-            form.update({NameObject('/Type'): NameObject('/XObject'), NameObject('/Subtype'): NameObject('/Form'),
-                         NameObject('/BBox'): source_page.trimbox.clone(writer),
-                         NameObject('/Resources'): source_page.get('/Resources', DictionaryObject()).clone(writer)})
-            if '/Group' in source_page:
-                form[NameObject('/Group')] = source_page['/Group'].clone(writer)
-            source_content = source_page.get_contents()
-            form.set_data(source_content.get_data() if source_content is not None else b'')
-            name = NameObject('/AtlasLabel' + str(len(label_forms)))
-            xobjects[name] = writer._add_object(form)
-            label_forms[token] = name
-        # Reuse one complete label form rather than cloning its fonts, images
-        # and artwork for every placement on the sheet.
-        content.operations.extend([([], b'q'), ([FloatObject(value) for value in slot['matrix']], b'cm'),
-                                   ([label_forms[token]], b'Do'), ([], b'Q')])
+    # Draw artwork first and all vector cuts above it, on separate PDF layers.
+    for layer, property_name in (('artwork', '/ArtworkLayer'), ('cut', '/CutLayer')):
+        content.operations.append(([NameObject('/OC'), NameObject(property_name)], b'BDC'))
+        for slot, upload in zip(slots, assignments):
+            key = (upload['token'], layer)
+            if key not in label_forms:
+                name = NameObject('/AtlasLabel' + str(len(label_forms)))
+                add_export_form(writer, xobjects, name, pages[upload['token']][layer], layers[layer])
+                label_forms[key] = name
+            content.operations.extend([([], b'q'), ([FloatObject(value) for value in slot['matrix']], b'cm'),
+                                       ([label_forms[key]], b'Do'), ([], b'Q')])
+        content.operations.append(([], b'EMC'))
     page.replace_contents(content)
-    add_cut_contour_border(page, writer)
+    if a5_cut_contour:
+        add_cut_contour_border(page, writer, cut_layer=True)
     page.compress_content_streams()
     return page
 
 
-def add_cut_contour_border(page: Any, writer: PdfWriter) -> None:
+def add_cut_contour_border(page: Any, writer: PdfWriter, cut_layer: bool = False) -> None:
     resources = page.get("/Resources")
     if resources is None:
         resources = DictionaryObject()
@@ -1051,6 +1049,8 @@ def add_cut_contour_border(page: Any, writer: PdfWriter) -> None:
     content = ContentStream(page.get_contents(), writer)
     page_w = float(page.mediabox.width)
     page_h = float(page.mediabox.height)
+    if cut_layer:
+        content.operations.append(([NameObject('/OC'), NameObject('/CutLayer')], b'BDC'))
     content.operations += [
         ([], b"q"),
         ([NameObject("/ATCutContour")], b"CS"),
@@ -1062,6 +1062,8 @@ def add_cut_contour_border(page: Any, writer: PdfWriter) -> None:
         ([], b"S"),
         ([], b"Q"),
     ]
+    if cut_layer:
+        content.operations.append(([], b'EMC'))
     page.replace_contents(content)
 
 
@@ -1194,14 +1196,10 @@ class Handler(BaseHTTPRequestHandler):
                 if payload.get('source_token') and not payload.get('editable',True):
                     data=Path(self.state.get_upload(payload['source_token'])['path']).read_bytes()
                 else:data, sizes = self.state.designer_pdf(payload)
-                if payload.get('rasterize', False):
+                if payload.get('export', False) or payload.get('rasterize', False):
                     try:
-                        _, dpi = export_options(payload)
-                        writer = PdfWriter()
-                        writer.add_page(rasterize_artwork(PdfReader(io.BytesIO(data)).pages[0], dpi))
-                        output = io.BytesIO()
-                        writer.write(output)
-                        data = output.getvalue()
+                        rasterize, dpi = export_options(payload)
+                        data = export_label_pdf(PdfReader(io.BytesIO(data)).pages[0], rasterize, dpi, payload.get('rasterize_text', True))
                     except ValueError as exc:
                         raise AppError(str(exc)) from exc
                 self.send_bytes(data, "application/pdf")

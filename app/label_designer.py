@@ -85,7 +85,7 @@ def create_label(payload, font_data=None, source_path=None):
         if size < 3.0: raise ValueError('Text is too long to remain readable. Shorten the line (minimum 3 pt).')
         sizes.append(round(size,2))
         commands.append(f'q 0 0 0 1 k BT /AtlasText {size:.5f} Tf 0 Tc 0 Tw 100 Tz 0 Ts 0 Tr 1 0 0 1 84.1699 {baseline} Tm <{encoded}> Tj ET Q')
-    extra=DecodedStreamObject();extra.set_data(('\n'.join(commands)).encode('ascii'))
+    extra=DecodedStreamObject();extra.set_data(('/AtlasCreatedText BMC\n' + '\n'.join(commands) + '\nEMC').encode('ascii'))
     page[NameObject('/Contents')]=ArrayObject([page.raw_get('/Contents'),writer._add_object(extra)])
     out=io.BytesIO();writer.write(out)
     return out.getvalue(),sizes

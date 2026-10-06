@@ -25,7 +25,7 @@ Windows build: BUILD_WINDOWS.bat. See VALIDATION.md for verification limits.
 - **Current version:** 1.0.0
 - **Target platform:** Windows 10/11, 64-bit
 - **Primary owner:** Atlas Tools
-- **Purpose:** Turn single tool-label PDFs into print-ready A5 label sheets using reusable templates, then add a mandatory 1 pt CutContour border to every generated A5 page.
+- **Purpose:** Turn single tool-label PDFs into print-ready A5 label sheets using reusable templates, with separate artwork/cut PDF layers and an optional 1 pt A5 perimeter CutContour.
 
 This document is the technical source of truth for future changes. Preserve existing behaviour unless a requested change explicitly replaces it.
 
@@ -104,9 +104,13 @@ Existing files are not overwritten; a unique filename is generated when necessar
 
 ---
 
-## 3. Mandatory CutContour border
+## 3. Optional A5 CutContour border and PDF layers
 
-Every generated A5 page must receive the CutContour border, regardless of output mode.
+The A5 perimeter CutContour is enabled by default and can be unticked in Output
+Options. This affects only the sheet border: individual label cuts stay included.
+All exports, including selected-label downloads, have exactly two optional
+content groups named `artwork` and `cut`. All CutContour paths belong to `cut`
+and always remain vector. Artwork and created text belong to `artwork`.
 
 Current implementation:
 
@@ -418,7 +422,7 @@ Process:
 3. Load page 1 of each replacement PDF
 4. Create a blank page with the saved master’s dimensions
 5. Place each assigned replacement PDF with its stored slot matrix (raster artwork by default at 300 DPI, with its CutContour paths retained as vector)
-6. Add the CutContour border
+6. Add the CutContour border when the A5 perimeter option is enabled
 7. Write combined and/or individual outputs
 
 Only the first page of each replacement-label PDF is used.
@@ -427,7 +431,11 @@ The master is used only as a layout reference. Its sample artwork, backgrounds,
 registration marks and old cut paths are removed, preventing doubled artwork
 and cuts underneath replacement labels. Rasterize artwork can be unticked for
 vector output; the DPI setting accepts whole numbers from 72 to 1200. Existing
-label CutContour paths and the generated A5 border remain vector spot colour.
+label CutContour paths and the optional A5 border remain vector spot colour.
+Rasterize created text defaults to enabled; when unticked, only the artwork is
+rasterized, with generated tool names/specifications overlaid as vector text.
+These text and artwork components share the artwork PDF layer, while all cuts
+are placed above them on the cut layer. Export settings are persisted.
 Rasterization uses the pinned pypdfium2 renderer in requirements.txt; the Windows
 build bundles its Windows wheel into app/vendor before packaging.
 
@@ -564,9 +572,12 @@ On every generated page verify:
 - `/Separation` colour space exists
 - Spot name is `/CutContour`
 - Alternate CMYK is 0.11 / 1 / 0 / 0
-- Stroke width is 1 pt
-- Border is visible and remains within the page boundary
-- Border is present in individual, combined, and mixed outputs
+- The enabled A5 perimeter stroke width is 1 pt
+- Enabled border is visible and remains within the page boundary
+- Border follows the toggle in individual, combined, and mixed outputs
+- Label cut contours remain included with the A5 perimeter unticked
+- Cut paths belong to the cut layer; artwork/text belong to artwork
+- Layer visibility can be changed independently in a PDF viewer
 
 ### Visual checks
 

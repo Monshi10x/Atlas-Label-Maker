@@ -99,7 +99,7 @@ class ExportTests(unittest.TestCase):
                         self.assertEqual(cut_strokes(page), slots + 1)
                         self.assertAlmostEqual(float(page.mediabox.width), 148*72/25.4, places=3)
                         self.assertEqual(len(image_refs(page)), 1 if raster else 0)
-                        self.assertEqual(len(page['/Resources']['/XObject']), 1)
+                        self.assertEqual(len(page['/Resources']['/XObject']), 2)
                     self.assertEqual(Path(state.get_upload(upload['token'])['path']).read_bytes(), source)
 
     def test_raster_dpi_and_cut_lines_not_baked_into_image(self):
@@ -143,7 +143,7 @@ class ExportTests(unittest.TestCase):
                 self.assertNotIn('ORIGINAL', page.extract_text())
             mixed = PdfReader(state.generate_rows({**options, 'combine_one_page': True})['created'][0])
             self.assertEqual(len(image_refs(mixed.pages[0])), 2)
-            self.assertEqual(len(mixed.pages[0]['/Resources']['/XObject']), 2)
+            self.assertEqual(len(mixed.pages[0]['/Resources']['/XObject']), 4)
             self.assertEqual(len(state.uploads), 1)
             self.assertEqual(Path(state.get_upload(upload['token'])['path']).read_bytes(), original)
 

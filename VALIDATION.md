@@ -1,3 +1,24 @@
+# Export layers, perimeter and text options validation
+
+- All 16 Python tests passed. The new checks cover every raster/text/perimeter
+  combination for combined and individual exports, shared layers across pages,
+  persisted options, nested source forms and reassignment of old PDF layers.
+- Real PDF optional-content groups named artwork and cut are independently
+  hideable in PDFium. Hiding both renders a blank page; hiding either removes
+  only its content. Every label cut and the optional A5 border remain vector.
+- When Rasterize created text is unticked, created text remains extractable
+  vector text and is absent from raster image pixels. Tagged text and older
+  Atlas-generated font resources are both recognized.
+- Chromium checks passed for default settings, toggle enablement, perimeter
+  on/off, both text modes, vector export, selected-label download and settings
+  restoration. Actual PDFs had 31 label cuts without the perimeter and 32 with
+  it, with exactly the artwork/cut layers and the expected text representation.
+- JavaScript syntax/preview checks and all 7 Go installer tests passed. The
+  current source/renderer bundle uses standard ZIP paths and cross-compiled to
+  a Windows AMD64 GUI EXE.
+
+LIMIT: Native Windows launch was not available in this cloud environment.
+
 # Windows renderer unpacking fix validation
 
 - All 7 Go installer tests passed, including the renderer's nested license

@@ -54,8 +54,9 @@ PDF. Illegal filename characters are replaced with underscores.
 Step 3 selects the A5 sheet layout and separate/mixed arrangement. Every
 row is included in sheet generation, not just the selected row. Every
 editable row is regenerated and validated before sheets are written. A row
-with invalid/overlong text blocks output with its row number. CutContour
-remains a 1 pt spot-colour border on every generated A5 page.
+with invalid/overlong text blocks output with its row number. A5 perimeter cut
+contour adds a 1 pt spot-colour border; untick it to omit the sheet border.
+Individual label cut contours remain included.
 
 EXPORT ARTWORK
 Sheet masters supply only page dimensions and placement positions. Their
@@ -63,8 +64,13 @@ sample artwork and old cut paths are removed before new labels are placed.
 Rasterize artwork is enabled by default at 300 DPI. Choose a whole-number
 resolution from 72 to 1200 DPI, or untick it to preserve vector artwork.
 The setting applies to A5 exports and DOWNLOAD SELECTED PDF; previews remain
-vector. Existing label CutContour paths and the A5 CutContour border remain
-vector spot-colour paths in both modes. Raster images are losslessly compressed
+vector. Rasterize created text is enabled by default; untick it to preserve
+edited tool names and specifications as vector text while rasterizing the
+artwork. This text option is disabled when all artwork is kept vector.
+Every exported PDF has two layers named artwork and cut. Artwork and created
+text belong to artwork; all label cuts and the optional A5 border belong to
+cut. CutContour paths remain vector spot colour in every mode. Use a PDF viewer
+that supports layers to hide or show either layer. Raster images are losslessly compressed
 and reused within a PDF. File size depends on the artwork and chosen DPI;
 rasterization is not guaranteed to make every PDF smaller. The Windows build
 bundles the renderer for its private Python runtime.
